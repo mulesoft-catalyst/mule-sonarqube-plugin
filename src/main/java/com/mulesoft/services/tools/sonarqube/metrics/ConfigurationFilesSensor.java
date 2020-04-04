@@ -26,17 +26,11 @@ public class ConfigurationFilesSensor extends AbstractMuleSensor {
 	private static final String FLOWS_XPATH_EXPRESSION = "count(//mule:mule/mule:flow)";
 	private static final String SUBFLOWS_XPATH_EXPRESSION = "count(//mule:mule/mule:sub-flow)";
 
-	private static final String DW_TRANSFORMATION_FLOW_PAYLOAD_XPATH_EXPRESSION_3 = "count(//mule:mule/mule:flow/dw:transform-message/dw:set-payload)";
-	private static final String DW_TRANSFORMATION_FLOW_VARIABLE_XPATH_EXPRESSION_3 = "count(//mule:mule/mule:flow/dw:transform-message/dw:set-variable)";
+	private static final String DW_TRANSFORMATION_PAYLOAD_XPATH_EXPRESSION_3 = "count(//dw:transform-message/dw:set-payload)";
+	private static final String DW_TRANSFORMATION_VARIABLE_XPATH_EXPRESSION_3 = "count(//dw:transform-message/dw:set-variable)";
 
-	private static final String DW_TRANSFORMATION_SUBFLOW_PAYLOAD_XPATH_EXPRESSION_3 = "count(//mule:mule/mule:sub-flow/dw:transform-message/dw:set-payload)";
-	private static final String DW_TRANSFORMATION_SUBFLOW_VARIABLE_XPATH_EXPRESSION_3 = "count(//mule:mule/mule:sub-flow/dw:transform-message/dw:set-variable)";
-
-	private static final String DW_TRANSFORMATION_FLOW_PAYLOAD_XPATH_EXPRESSION_4 = "count(//mule:mule/mule:flow/ee:transform/ee:message/ee:set-payload)";
-	private static final String DW_TRANSFORMATION_FLOW_VARIABLE_XPATH_EXPRESSION_4 = "count(//mule:mule/mule:flow/ee:transform/ee:message/ee:set-variable)";
-
-	private static final String DW_TRANSFORMATION_SUBFLOW_PAYLOAD_XPATH_EXPRESSION_4 = "count(//mule:mule/mule:sub-flow/ee:transform/ee:message/ee:set-payload)";
-	private static final String DW_TRANSFORMATION_SUBFLOW_VARIABLE_XPATH_EXPRESSION_4 = "count(//mule:mule/mule:sub-flow/ee:transform/ee:message/ee:set-variable)";
+	private static final String DW_TRANSFORMATION_PAYLOAD_XPATH_EXPRESSION_4 = "count(//ee:transform/ee:message/ee:set-payload)";
+	private static final String DW_TRANSFORMATION_VARIABLE_XPATH_EXPRESSION_4 = "count(//ee:transform/ee:variables/ee:set-variable)";
 
 	@Override
 	public void describe(SensorDescriptor descriptor) {
@@ -61,16 +55,10 @@ public class ConfigurationFilesSensor extends AbstractMuleSensor {
 
 			if (MuleLanguage.LANGUAGE_MULE4_KEY.equals(language)) {
 				saveMetric(xpathProcessor, MuleMetrics.TRANSFORMATIONS, context, file, rootElement,
-						DW_TRANSFORMATION_FLOW_PAYLOAD_XPATH_EXPRESSION_4,
-						DW_TRANSFORMATION_FLOW_VARIABLE_XPATH_EXPRESSION_4,
-						DW_TRANSFORMATION_SUBFLOW_PAYLOAD_XPATH_EXPRESSION_4,
-						DW_TRANSFORMATION_SUBFLOW_VARIABLE_XPATH_EXPRESSION_4);
+						DW_TRANSFORMATION_PAYLOAD_XPATH_EXPRESSION_4, DW_TRANSFORMATION_VARIABLE_XPATH_EXPRESSION_4);
 			} else {
 				saveMetric(xpathProcessor, MuleMetrics.TRANSFORMATIONS, context, file, rootElement,
-						DW_TRANSFORMATION_FLOW_PAYLOAD_XPATH_EXPRESSION_3,
-						DW_TRANSFORMATION_FLOW_VARIABLE_XPATH_EXPRESSION_3,
-						DW_TRANSFORMATION_SUBFLOW_PAYLOAD_XPATH_EXPRESSION_3,
-						DW_TRANSFORMATION_SUBFLOW_VARIABLE_XPATH_EXPRESSION_3);
+						DW_TRANSFORMATION_PAYLOAD_XPATH_EXPRESSION_3, DW_TRANSFORMATION_VARIABLE_XPATH_EXPRESSION_3);
 
 			}
 		} catch (JDOMException | IOException e) {

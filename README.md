@@ -60,6 +60,10 @@ Sonarqube plugin:
 
 ## Release Notes
 
+#### 1.0.0
+##### Changes
+	- Added Line Number processing in Coverage Sensor
+
 #### 0.0.11
 ##### Changes
 	- Added Rule Template. 
@@ -74,7 +78,7 @@ Sonarqube plugin:
 ##### Changes
 	- Added property sonar.mule.ruleset.categories. It allows to filter ruleset categories to apply in the project. 
 	  Value should be a string separated by commas. 
-	  For example run, `mvn sonar:sonar -Dsonar.mule.ruleset.categories=flows` to only run the flows category ruleset
+	  For example run, `mvn sonar:sonar -Dsonar.mule.ruleset.categories=flows` to only apply the flows category ruleset
 	
 #### 0.0.8
 ##### Changes

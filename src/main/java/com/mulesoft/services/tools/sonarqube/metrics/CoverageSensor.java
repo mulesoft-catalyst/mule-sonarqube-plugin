@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.Scanner;
 
@@ -29,15 +28,15 @@ import com.mulesoft.services.tools.sonarqube.sensor.MuleSensor;
 public class CoverageSensor implements Sensor {
 
 	private final Logger logger = Loggers.get(CoverageSensor.class);
-
-	private static final String LANGUAGE_PROPERTY = "sonar.property.language";
-
 	private static final String MUNIT_NAME_PROPERTY = "mule.munit.properties.name";
 	private static final String MUNIT_FLOWS_PROPERTY = "mule.munit.properties.flows";
 	private static final String MUNIT_FILES_PROPERTY = "mule.munit.properties.files";
+	private static final String MUNIT_LINES_PROPERTY = "mule.munit.properties.lines";
 	private static final String MUNIT_COVERAGE_PROPERTY = "mule.munit.properties.coverage";
 	private static final String MUNIT_PROCESSOR_COUNT = "mule.munit.properties.processorCount";
 	private static final String MUNIT_COVERED_PROCESSOR_COUNT = "mule.munit.properties.coveredProcessorCount";
+	private static final String MUNIT_LINE_NUMBER = "mule.munit.properties.lineNumber";
+	private static final String MUNIT_COVERED = "mule.munit.properties.covered";
 
 	ObjectMapper objectMapper = new ObjectMapper();
 
@@ -93,6 +92,21 @@ public class CoverageSensor implements Sensor {
 					int coveredProcessorCount = flowNode.get(props.getProperty(MUNIT_COVERED_PROCESSOR_COUNT)).asInt();
 					counter.addProcessors(messageProcessorCount);
 					counter.addCoveredProcessors(coveredProcessorCount);
+					ArrayNode lines = (ArrayNode) flowNode.get(props.getProperty(MUNIT_LINES_PROPERTY));
+					if (lines != null) {
+						counter.setHasLineNumbers(true);
+						for (Iterator<JsonNode> linesIterator = lines.iterator(); linesIterator.hasNext();) {
+							JsonNode linesNode = linesIterator.next();
+							int lineNumber = linesNode.get(props.getProperty(MUNIT_LINE_NUMBER)).asInt();
+							boolean covered = linesNode.get(props.getProperty(MUNIT_COVERED)).asBoolean();
+
+							if (covered) {
+								counter.getCoveredLines().add(lineNumber);
+							} else {
+								counter.getNotcoveredLines().add(lineNumber);
+							}
+						}
+					}
 				}
 				String[] fileParts = name.split(File.separator);
 				coverageMap.put(fileParts[fileParts.length - 1], counter);
@@ -113,14 +127,28 @@ public class CoverageSensor implements Sensor {
 		FlowCoverageCounter coverage = coverageMap.get(fileName);
 		if (coverage != null) {
 			NewCoverage newCoverage = context.newCoverage().onFile(file);
-			int processors = coverage.getProcessors();
-			int covered = coverage.getCoveredProcessors();
 
-			for (int i = 0; i < processors; i++) {
-				newCoverage.lineHits(i + 1, covered > 0 ? 1 : 0);
-				covered--;
+			if (coverage.hasLineNumbers()) {
+				for (Iterator<Integer> iterator = coverage.getCoveredLines().iterator(); iterator.hasNext();) {
+					Integer lineNumber = iterator.next();
+					newCoverage.lineHits(lineNumber, 1);
+				}
+				for (Iterator<Integer> iterator = coverage.getNotcoveredLines().iterator(); iterator.hasNext();) {
+					Integer lineNumber = iterator.next();
+					newCoverage.lineHits(lineNumber, 0);
+				}
+				newCoverage.save();
+			} else {
+				int processors = coverage.getProcessors();
+				int covered = coverage.getCoveredProcessors();
+
+				for (int i = 0; i < processors; i++) {
+					newCoverage.lineHits(i + 1, covered > 0 ? 1 : 0);
+					covered--;
+				}
+
+				newCoverage.save();
 			}
-			newCoverage.save();
 		}
 	}
 

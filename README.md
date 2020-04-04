@@ -39,7 +39,7 @@ Sonarqube plugin:
 
 
 ## Sonar Configuration
-1. Copy the generated files, mule-validation-sonarqube-plugin-{version}-mule[3|4].jar and the base plugin mule-validation-sonarqube-plugin-{version}-mule.jar to *sonar-home*/extensions/plugins
+1. Copy the generated file, mule-validation-sonarqube-plugin-{version}-mule.jar to *sonar-home*/extensions/plugins
 2. Copy rules [Mule 3 Rules](https://github.com/mulesoft-consulting/mule-validation-toolkit/blob/master/mule-validation-xpath-core/src/main/resources/rules-3.xml) or [Mule 4 Rules](https://github.com/mulesoft-consulting/mule-validation-toolkit/blob/master/mule-validation-xpath-core/src/main/resources/rules-4.xml) to *sonar-home*/extensions/plugins
 3. Start the server
 
@@ -49,17 +49,24 @@ Sonarqube plugin:
 ```
 <properties>
 		...
-		<sonar.language>mule[3|4]</sonar.language>
-		<sonar.sources>src/main/app</sonar.sources>
+		<sonar.sources>src</sonar.sources>
 		...	
 </properties>
 ```
 2. Analyze the project executing mvn sonar:sonar
 
 ### Alternative 2
-1. Analyze the project executing mvn sonar:sonar -Dsonar.language=mule[3|4] -Dsonar.sources=src/main
+1. Analyze the project executing mvn sonar:sonar -Dsonar.sources=src
 
 ## Release Notes
+
+#### 0.0.11
+##### Changes
+	- Added Rule Template. You could create new custom rules from SonarQube Console.
+
+#### 0.0.10
+##### Changes
+	- Added Rule description. Now you could add an extended description to the rules. The description supports HTML.
 
 #### 0.0.9
 ##### Changes

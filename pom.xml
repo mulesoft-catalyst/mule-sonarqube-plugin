@@ -5,7 +5,7 @@
 
 	<groupId>com.mulesoft.services</groupId>
 	<artifactId>mule-validation-sonarqube-plugin</artifactId>
-	<version>0.1.0</version>
+	<version>1.0.0</version>
 	<packaging>jar</packaging>
 
 	<url>http://maven.apache.org</url>
@@ -42,7 +42,7 @@
 		<dependency>
 			<groupId>com.mulesoft.services</groupId>
 			<artifactId>mule-validation-xpath-core</artifactId>
-			<version>0.0.8</version>
+			<version>0.1.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
@@ -51,7 +51,7 @@
 		</dependency>
 	</dependencies>
 	<build>
-		<finalName>${artifactId}-${version}-mule</finalName>
+		<finalName>${project.artifactId}-${project.version}-mule</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.sonarsource.sonar-packaging-maven-plugin</groupId>

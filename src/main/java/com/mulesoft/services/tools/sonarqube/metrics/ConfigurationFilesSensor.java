@@ -16,6 +16,7 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 
 import com.mulesoft.services.tools.sonarqube.language.MuleLanguage;
+import com.mulesoft.services.tools.sonarqube.properties.MuleProperties;
 import com.mulesoft.services.xpath.XPathProcessor;
 
 public class ConfigurationFilesSensor extends AbstractMuleSensor {
@@ -23,14 +24,10 @@ public class ConfigurationFilesSensor extends AbstractMuleSensor {
 	private final Logger logger = Loggers.get(ConfigurationFilesSensor.class);
 	SAXBuilder saxBuilder = new SAXBuilder();
 
-	private static final String FLOWS_XPATH_EXPRESSION = "count(//mule:mule/mule:flow)";
-	private static final String SUBFLOWS_XPATH_EXPRESSION = "count(//mule:mule/mule:sub-flow)";
-
-	private static final String DW_TRANSFORMATION_PAYLOAD_XPATH_EXPRESSION_3 = "count(//dw:transform-message/dw:set-payload)";
-	private static final String DW_TRANSFORMATION_VARIABLE_XPATH_EXPRESSION_3 = "count(//dw:transform-message/dw:set-variable)";
-
-	private static final String DW_TRANSFORMATION_PAYLOAD_XPATH_EXPRESSION_4 = "count(//ee:transform/ee:message/ee:set-payload)";
-	private static final String DW_TRANSFORMATION_VARIABLE_XPATH_EXPRESSION_4 = "count(//ee:transform/ee:variables/ee:set-variable)";
+	private static final String METRIC_FLOW_PROPERTY = "mule.metric.flow";
+	private static final String METRIC_SUBFLOW_PROPERTY = "mule.metric.subflow";
+	private static final String METRIC_DW_PAYLOAD_PROPERTY = "mule.metric.dw.payload";
+	private static final String METRIC_DW_VARIABLE_PROPERTY = "mule.metric.dw.variable";
 
 	@Override
 	public void describe(SensorDescriptor descriptor) {
@@ -46,21 +43,19 @@ public class ConfigurationFilesSensor extends AbstractMuleSensor {
 					.loadNamespaces(language.equals(MuleLanguage.LANGUAGE_MULE4_KEY) ? "namespace-4.properties"
 							: "namespace-3.properties");
 
-			saveMetric(xpathProcessor, MuleMetrics.FLOWS, context, file, rootElement, FLOWS_XPATH_EXPRESSION);
+			saveMetric(xpathProcessor, MuleMetrics.FLOWS, context, file, rootElement,
+					MuleProperties.getProperties(language).get(METRIC_FLOW_PROPERTY).toString());
 
-			saveMetric(xpathProcessor, MuleMetrics.SUBFLOWS, context, file, rootElement, SUBFLOWS_XPATH_EXPRESSION);
+			saveMetric(xpathProcessor, MuleMetrics.SUBFLOWS, context, file, rootElement,
+					MuleProperties.getProperties(language).get(METRIC_SUBFLOW_PROPERTY).toString());
 
 			// Lines of code = Lines in Mule
 			saveMetric(file.lines(), CoreMetrics.NCLOC, context, file);
 
-			if (MuleLanguage.LANGUAGE_MULE4_KEY.equals(language)) {
-				saveMetric(xpathProcessor, MuleMetrics.TRANSFORMATIONS, context, file, rootElement,
-						DW_TRANSFORMATION_PAYLOAD_XPATH_EXPRESSION_4, DW_TRANSFORMATION_VARIABLE_XPATH_EXPRESSION_4);
-			} else {
-				saveMetric(xpathProcessor, MuleMetrics.TRANSFORMATIONS, context, file, rootElement,
-						DW_TRANSFORMATION_PAYLOAD_XPATH_EXPRESSION_3, DW_TRANSFORMATION_VARIABLE_XPATH_EXPRESSION_3);
+			saveMetric(xpathProcessor, MuleMetrics.TRANSFORMATIONS, context, file, rootElement,
+					MuleProperties.getProperties(language).get(METRIC_DW_PAYLOAD_PROPERTY).toString(),
+					MuleProperties.getProperties(language).get(METRIC_DW_VARIABLE_PROPERTY).toString());
 
-			}
 		} catch (JDOMException | IOException e) {
 			logger.error(e.getMessage(), e);
 		}

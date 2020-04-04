@@ -62,15 +62,19 @@ Sonarqube plugin:
 
 #### 0.0.11
 ##### Changes
-	- Added Rule Template. You could create new custom rules from SonarQube Console.
+	- Added Rule Template. 
+	  You could create new custom rules from SonarQube Console.
 
 #### 0.0.10
 ##### Changes
-	- Added Rule description. Now you could add an extended description to the rules. The description supports HTML.
+	- Added Rule description. 
+	  Now you could add an extended description to the rules. The description supports HTML.
 
 #### 0.0.9
 ##### Changes
-	- Added property sonar.mule.ruleset.categories. It allows to filter ruleset categories to apply in the project. Value should be a string separated by commas. For example run, mvn sonar:sonar -Dsonar.mule.ruleset.categories=flows to only run the flows category ruleset
+	- Added property sonar.mule.ruleset.categories. It allows to filter ruleset categories to apply in the project. 
+	  Value should be a string separated by commas. 
+	  For example run, mvn sonar:sonar -Dsonar.mule.ruleset.categories=flows to only run the flows category ruleset
 	
 #### 0.0.8
 ##### Changes

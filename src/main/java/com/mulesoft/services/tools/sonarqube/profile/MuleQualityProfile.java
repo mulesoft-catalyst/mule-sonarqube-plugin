@@ -12,7 +12,7 @@ import org.sonar.api.server.profile.BuiltInQualityProfilesDefinition;
 
 import com.mulesoft.services.tools.sonarqube.language.MuleLanguage;
 import com.mulesoft.services.tools.sonarqube.rule.MuleRulesDefinition;
-import com.mulesoft.services.tools.validation.consumer.RuleFactory;
+import com.mulesoft.services.tools.validation.RuleFactory;
 import com.mulesoft.services.tools.validation.rules.Ruleset;
 import com.mulesoft.services.tools.validation.rules.Rulestore;
 

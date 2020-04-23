@@ -126,7 +126,8 @@
 			severity="MAJOR" type="code_smell">
 			count(//mule:mule/db:config/db:mssql-connection)=0
 			or
-			matches(//mule:mule/db:config/db:mssql-connection/@host, '^\\$\\{.*\\}$')
+			matches(//mule:mule/db:config/db:mssql-connection/@host,
+			'^\$\{.*\}$')
 		</rule>
 	</ruleset>
 </rulestore>

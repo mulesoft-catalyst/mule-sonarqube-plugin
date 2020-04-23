@@ -129,6 +129,92 @@
 			matches(//mule:mule/db:config/db:mssql-connection/@host,
 			'^\$\{.*\}$')
 		</rule>
+		<rule id="11"
+			name="Domain - HTTP Requestor reconnection strategy should use a configurable count value"
+			description="&lt;b&gt;Domain&lt;/b&gt; - HTTP Requestor reconnection strategy should use a configurable count value"
+			severity="MAJOR" applies="file" type="bug">
+			count(//domain:mule-domain/http:request-config/http:request-connection)
+			= count(
+			//domain:mule-domain/http:request-config/http:request-connection/mule:reconnection/mule:reconnect[matches(@count,'^\$\{.*\}$')]
+			)
+		</rule>
+		<rule id="12"
+			name="Domain - HTTP Requestor reconnection strategy should use configurable frequency"
+			description="&lt;b&gt;Domain&lt;/b&gt; - HTTP Requestor reconnection strategy should use configurable frequency"
+			severity="MAJOR" applies="file" type="bug">
+			count(//domain:mule-domain/http:request-config/http:request-connection)
+			= count(
+			//domain:mule-domain/http:request-config/http:request-connection/mule:reconnection/mule:reconnect[matches(@frequency,'^\$\{.*\}$')]
+			)
+		</rule>
+		<rule id="13"
+			name="Domain - Mule Secure Properties should use AES-CBC algorithm"
+			description="&lt;b&gt;Domain&lt;/b&gt; - Mule Secure Properties should use AES-CBC algorithm"
+			severity="MAJOR" applies="file" type="vulnerability">
+			count(//domain:mule-domain/secure-properties:config/secure-properties:encrypt[@algorithm!='AES'
+			or @mode!='CBC']) = 0
+		</rule>
+		<rule id="14"
+			name="Domain - HTTP Listener should not use a hardcoded port value"
+			description="&lt;b&gt;Domain&lt;/b&gt; - HTTP Listener should not use a hardcoded port value"
+			severity="MAJOR" applies="file" type="code_smell">
+			count(//domain:mule-domain/http:listener-config)=0
+			or
+			matches(//domain:mule-domain/http:listener-config/http:listener-connection/@port,
+			'^\$\{.*\}$')
+		</rule>
+		<rule id="15"
+			name="Domain - HTTP Requestor Configuration should reference a TLS Configuration"
+			description="&lt;b&gt;Domain&lt;/b&gt; - HTTP Requestor should reference a TLS Configuration"
+			severity="MINOR" applies="file" type="bug">
+			count(//domain:mule-domain/http:request-config) =
+			count(//domain:mule-domain/http:request-config/http:request-connection[matches(@tlsContext,'^\$\{.*\}$')])
+		</rule>
+		<rule id="16"
+			name="Domain - Trust Store Configuration should use a configurable path"
+			description="&lt;b&gt;Domain&lt;/b&gt; - Trust Store Configuration should use a configurable path"
+			severity="MINOR" applies="file" type="vulnerability">
+			count(//domain:mule-domain/tls:context/tls:trust-store) =
+			count(//domain:mule-domain/tls:context/tls:trust-store[matches(@path,'^\$\{.*\}$')])
+		</rule>
+		<rule id="17"
+			name="Domain - Key Store Configuration should use a configurable path"
+			description="&lt;b&gt;Domain&lt;/b&gt; - Key Store Configuration should use a configurable path"
+			severity="MINOR" applies="file" type="vulnerability">
+			count(//domain:mule-domain/tls:context/tls:key-store) =
+			count(//domain:mule-domain/tls:context/tls:key-store[matches(@path,'^\$\{.*\}$')])
+		</rule>
+		<rule id="18"
+			name="Domain - Trust Store Configuration should not have the insecure attribute"
+			description="&lt;b&gt;Domain&lt;/b&gt; - Trust Store Configuration should not have the insecure attribute"
+			severity="CRITICAL" applies="file" type="vulnerability">
+			count(//domain:mule-domain/tls:context/tls:trust-store) =
+			count(//domain:mule-domain/tls:context/tls:trust-store[not(@insecure)])
+		</rule>
+		<rule id="19"
+			name="Domain - HTTPS Listener should have a TLS Configuration"
+			description="&lt;b&gt;Domain&lt;/b&gt; - HTTPS Listener should have a TLS Configuration"
+			severity="MAJOR" applies="file" type="vulnerability">
+			count(//domain:mule-domain/http:listener-config/http:listener-connection[@protocol='HTTPS'
+			and not(@tlsContext)])=0
+		</rule>
+		<rule id="20"
+			name="Domain - HTTP Requestor Configuration should not use dynamic default headers or query params"
+			description="&lt;b&gt;Domain&lt;/b&gt; - HTTP Requestor Configuration should not use dynamic default headers or query params"
+			severity="CRITICAL" applies="file" type="code_smell">
+			count(//domain:mule-domain/http:request-config/http:default-headers/http:default-header[matches(@value,'^#\[.*\]$')])
+			= 0
+			and
+			count(//domain:mule-domain/http:request-config/http:default-query-params/http:query-param[matches(@value,'^#\[.*\]$')])
+			= 0
+		</rule>
+		<rule id="21"
+			name="Domain - HTTP Requestor Configuration should have a configurable Response Timeout"
+			description="&lt;b&gt;Domain&lt;/b&gt; - HTTP Requestor Configuration should have a configurable Response Timeout"
+			severity="CRITICAL" applies="file" type="bug">
+			count(//domain:mule-domain/http:request-config[not(@responseTimeout)
+			or not(matches(@responseTimeout,'^\$\{.*\}$'))]) = 0
+		</rule>
 	</ruleset>
 </rulestore>
 

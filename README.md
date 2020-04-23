@@ -54,6 +54,10 @@ Sonarqube plugin:
 
 ## Release Notes
 
+#### 1.0.2
+##### Changes
+	- Added Support for Mule 4 Domain Inspections
+
 #### 1.0.1
 ##### Changes
 	- Refactor - One single project. mule-validation-xpath-core dependency is not longer needed

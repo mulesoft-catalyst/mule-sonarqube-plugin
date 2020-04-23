@@ -48,4 +48,14 @@ public class Mule4Test {
 		boolean valid = xpathProcessor.processXPath(rule, rootElement, Boolean.class).booleanValue();
 		assertTrue("DB CONFIG HOST MUST HAVE A PROP PLACEHOLDER", valid);
 	}
+	
+	@Test
+	public void testDomain() throws JDOMException, IOException {
+		String rule = "count(//domain:mule-domain/http:request-config[not(@responseTimeout) or not(matches(@responseTimeout,'^\\$\\{.*\\}$'))]) = 0";
+		String fileName = testDirectory.concat(File.separator + "mule-domain-config.xml");
+		Document document = saxBuilder.build(new File(fileName));
+		Element rootElement = document.getRootElement();
+		boolean valid = xpathProcessor.processXPath(rule, rootElement, Boolean.class).booleanValue();
+		assertTrue("HTTP Requestor Configuration should have a configurable Response Timeout", valid);
+	}
 }

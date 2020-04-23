@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="ts-mcm-combined-wrapper-impl-flow" doc:id="c409cafb-69f0-4966-b033-14add2716447" >
+		<set-variable value="" doc:name="Set Variable" doc:id="2e304c13-e85d-4724-965b-76e6aab0b6d4" variableName="Bla"/>
+		<ee:transform doc:name="Transform Message" doc:id="2c54ac5e-e2db-486f-b500-038ae8e54419" >
+			<ee:message>
+				<ee:set-payload resource="blas.dwl" />
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

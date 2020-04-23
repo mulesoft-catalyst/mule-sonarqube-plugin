@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:api-platform-gw="http://www.mulesoft.org/schema/mule/api-platform-gw" xmlns:apikit="http://www.mulesoft.org/schema/mule/apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:iqvia-logging="http://www.mulesoft.org/schema/mule/iqvia-logging" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/apikit http://www.mulesoft.org/schema/mule/apikit/current/mule-apikit.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+http://www.mulesoft.org/schema/mule/api-platform-gw http://www.mulesoft.org/schema/mule/api-platform-gw/current/mule-api-platform-gw.xsd
+http://www.mulesoft.org/schema/mule/iqvia-logging http://www.mulesoft.org/schema/mule/iqvia-logging/current/mule-iqvia-logging.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+    <apikit:config name="ts-onekey-intake-wrapper-config" raml="ts-onekey-intake-wrapper.raml" consoleEnabled="false" doc:name="Router" />
+    <flow name="ts-onekey-intake-wrapper-main">
+        <http:listener config-ref="HttpsListenerConfig" path="/api/*" doc:name="HTTP" />
+        <apikit:router config-ref="ts-onekey-intake-wrapper-config" doc:name="APIkit Router" />
+        <exception-strategy ref="ts-onekey-intake-wrapper-apiKitGlobalExceptionMapping" doc:name="Reference Exception Strategy" />
+    </flow>
+    <flow name="ts-onekey-intake-wrapper-console">
+        <http:listener config-ref="HttpsListenerConfig" path="/console/*" doc:name="HTTP" />
+        <apikit:console config-ref="ts-onekey-intake-wrapper-config" doc:name="APIkit Console" />
+    </flow>
+    <flow name="post:/trigger:ts-onekey-intake-wrapper-config">
+        <set-variable variableName="jobId" value="#[function:uuid]" doc:name="jobId" />
+        <iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration" eventName="iqvia.intakewrapper.trigger.start"  severity="INFO" doc:name="IQVIA Logging">
+            <iqvia-logging:meta ref="#[[&quot;jobId&quot;: flowVars.jobId]]" />
+        </iqvia-logging:log-entries>
+        <dw:transform-message doc:name="Set Date Range and Executor">
+            <dw:set-variable variableName="dateRange"><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	from: (payload.from >> |-00:00|) as :string {format: "YYYY-MM-dd'T'HH:mm:ssX"},
+	to: ((payload.to) >> |-00:00|) as :string {format: "YYYY-MM-dd'T'HH:mm:ssX"}
+}]]></dw:set-variable>
+            <dw:set-variable variableName="executor"><![CDATA[%dw 1.0
+%output application/java
+---
+"API"]]></dw:set-variable>
+        </dw:transform-message>
+        <flow-ref name="ts-onekey-intake-wrapper-implFlow" doc:name="ts-onekey-intake-wrapper-implFlow" />
+        <dw:transform-message doc:name="Set Response">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	id : flowVars.jobId
+}]]></dw:set-payload>
+        </dw:transform-message>
+        <iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration" eventName="iqvia.intakewrapper.trigger.end" severity="INFO" doc:name="IQVIA Logging">
+            <iqvia-logging:meta ref="#[[&quot;jobId&quot;: flowVars.jobId]]"/>
+        </iqvia-logging:log-entries>
+        
+        <exception-strategy ref="global-exception-handlerChoice_Exception_Strategy" doc:name="Reference Exception Strategy" />
+    </flow>
+    <apikit:mapping-exception-strategy name="ts-onekey-intake-wrapper-apiKitGlobalExceptionMapping">
+        <apikit:mapping statusCode="404">
+            <apikit:exception value="org.mule.module.apikit.exception.NotFoundException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-variable variableName="exception" value="#[exception]" doc:name="Set Exception Variable" />
+            <iqvia-logging:log-error-entries config-ref="IQVIA_Logging__Configuration" errorDetails="#[exception.message]" eventName="BadRequest" doc:name="IQVIA Logging" />
+            <dw:transform-message doc:name="Transform Message">
+                <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	apiVersion: p('apiVersion'),
+	error: {
+		message: flowVars.exception.message,
+		code: 404,
+		reason: 'Resource not found'
+	}
+}]]></dw:set-payload>
+            </dw:transform-message>
+        </apikit:mapping>
+        <apikit:mapping statusCode="405">
+            <apikit:exception value="org.mule.module.apikit.exception.MethodNotAllowedException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-variable variableName="exception" value="#[exception]" doc:name="Set Exception Variable" />
+            <iqvia-logging:log-error-entries config-ref="IQVIA_Logging__Configuration" errorDetails="#[exception.message]" eventName="BadRequest" doc:name="IQVIA Logging" />
+            <dw:transform-message doc:name="Transform Message">
+                <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	apiVersion: p('apiVersion'),
+	error: {
+		message: flowVars.exception.message,
+		code: 405,
+		reason: 'Method not allowed'
+	}
+}]]></dw:set-payload>
+            </dw:transform-message>
+        </apikit:mapping>
+        <apikit:mapping statusCode="415">
+            <apikit:exception value="org.mule.module.apikit.exception.UnsupportedMediaTypeException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-variable variableName="exception" value="#[exception]" doc:name="Set Exception Variable" />
+            <iqvia-logging:log-error-entries config-ref="IQVIA_Logging__Configuration" errorDetails="#[exception.message]" eventName="BadRequest" doc:name="IQVIA Logging" />
+            <dw:transform-message doc:name="Transform Message">
+                <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	apiVersion: p('apiVersion'),
+	error: {
+		message: flowVars.exception.message,
+		code: 415,
+		reason: 'Unsupported media type'
+	}
+}]]></dw:set-payload>
+            </dw:transform-message>
+        </apikit:mapping>
+        <apikit:mapping statusCode="406">
+            <apikit:exception value="org.mule.module.apikit.exception.NotAcceptableException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-variable variableName="exception" value="#[exception]" doc:name="Set Exception Variable" />
+            <iqvia-logging:log-error-entries config-ref="IQVIA_Logging__Configuration" errorDetails="#[exception.message]" eventName="BadRequest" doc:name="IQVIA Logging" />
+            <dw:transform-message doc:name="Transform Message">
+                <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	apiVersion: p('apiVersion'),
+	error: {
+		message: flowVars.exception.message,
+		code: 406,
+		reason: 'Not acceptable'
+	}
+}]]></dw:set-payload>
+            </dw:transform-message>
+        </apikit:mapping>
+        <apikit:mapping statusCode="400">
+            <apikit:exception value="org.mule.module.apikit.exception.BadRequestException" />
+            <set-property propertyName="Content-Type" value="application/json" doc:name="Property" />
+            <set-variable variableName="exception" value="#[exception]" doc:name="Set Exception Variable" />
+            <iqvia-logging:log-error-entries config-ref="IQVIA_Logging__Configuration" errorDetails="#[exception.message]" eventName="BadRequest" doc:name="IQVIA Logging" />
+            <dw:transform-message doc:name="Transform Message">
+                <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+{
+	apiVersion: p('apiVersion'),
+	error: {
+		message: flowVars.exception.message,
+		code: 400,
+		reason: 'Bad request'
+	}
+}]]></dw:set-payload>
+            </dw:transform-message>
+        </apikit:mapping>
+    </apikit:mapping-exception-strategy>
+
+</mule>

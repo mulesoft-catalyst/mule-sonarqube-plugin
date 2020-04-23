@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:api-platform-gw="http://www.mulesoft.org/schema/mule/api-platform-gw" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:cluster="http://www.mulesoft.org/schema/mule/ee/cluster"
+	xmlns:anypoint-mq="http://www.mulesoft.org/schema/mule/anypoint-mq"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:secure-property-placeholder="http://www.mulesoft.org/schema/mule/secure-property-placeholder"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans"
+	xmlns:iqvia-logging="http://www.mulesoft.org/schema/mule/iqvia-logging"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/secure-property-placeholder http://www.mulesoft.org/schema/mule/secure-property-placeholder/current/mule-secure-property-placeholder.xsd
+http://www.mulesoft.org/schema/mule/iqvia-logging http://www.mulesoft.org/schema/mule/iqvia-logging/current/mule-iqvia-logging.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/api-platform-gw http://www.mulesoft.org/schema/mule/api-platform-gw/current/mule-api-platform-gw.xsd">
+	<secure-property-placeholder:config
+		name="Secure_Property_Placeholder" key="${mule.key}"
+		location="common.properties,ts-onekey-intake-wrapper.${mule.env}.properties"
+		doc:name="Secure Property Placeholder" />
+	<http:listener-config name="HttpsListenerConfig"
+		host="0.0.0.0" port="${https.port}" doc:name="HTTPS Listener Configuration"
+		protocol="HTTPS">
+		<tls:context>
+			<tls:key-store type="jks" path="localhost-keystore.jks"
+				alias="${https.alias}" keyPassword="${https.keyPassword}" password="${https.keyStorePassword}" />
+		</tls:context>
+	</http:listener-config>
+	<iqvia-logging:config name="IQVIA_Logging__Configuration"
+		apiURL="${logger.api.url}" clientId="${logger.api.clientId}"
+		clientSecret="${logger.api.clientSecret}" doc:name="IQVIA Logging: Configuration" />
+	<http:request-config name="HTTPRequestConfiguration-ConfigurationDB"
+		host="${configurationAPI.host}" port="${configurationAPI.port}"
+		doc:name="HTTP Request Configuration" basePath="${configurationAPI.basePath}"
+		protocol="HTTPS" responseTimeout="${configurationAPI.responseTimeout}">
+		<http:basic-authentication username="${configurationAPI.username}"
+			password="${configurationAPI.password}" />
+	</http:request-config>
+	<http:request-config name="HTTPRequestConfiguration-OneKeySys"
+		host="#[flowVars.internalHost]" port="#[flowVars.internalPort]"
+		doc:name="HTTP Request Configuration" basePath="#[flowVars.internalBasePath]"
+		protocol="HTTPS" responseTimeout="${oksys.responseTimeout}">
+		<http:basic-authentication username="#[flowVars.credentials.clientId]"
+			password="#[flowVars.credentials.clientSecret]" />
+	</http:request-config>
+	<!--<http:request-config name="HTTPRequestConfiguration-OneKeySys" host="${oksys.host}" 
+		port="${oksys.port}" doc:name="HTTP Request Configuration" basePath="" protocol="HTTP"> 
+		</http:request-config> -->
+	<anypoint-mq:config name="Anypoint_MQ_Configuration"
+		doc:name="Anypoint MQ Configuration">
+		<anypoint-mq:provider
+			url="https://mq-us-east-1.anypoint.mulesoft.com/api/v1" clientId="${anypointmq.clientId}"
+			clientSecret="${anypointmq.clientSecret}" />
+	</anypoint-mq:config>
+	<configuration doc:name="Configuration">
+		<expression-language>
+			<global-functions>
+				def decode(value) {
+					return new String(java.util.Base64.getDecoder().decode(value), "UTF-8");
+				}
+				def getTimeStamp(calendar) {
+					return new java.sql.Timestamp(calendar.getTimeInMillis());
+				}
+				def getCalendar(timestamp) {
+					java.util.Calendar cal = java.util.Calendar.getInstance();
+					cal.setTime(timestamp);
+					return cal;
+				}
+			</global-functions>
+		</expression-language>
+	</configuration>
+	<db:oracle-config name="OracleDeDupConfiguration"
+		host="${db.oracle.host}" port="${db.oracle.port}" instance="${db.oracle.instance}"
+		user="${db.oracle.user}" password="${db.oracle.password}" doc:name="Oracle Configuration">
+		<db:data-types>
+			<db:data-type name="ONEKEY_ID_ARR" id="2003" />
+			<db:data-type name="OK_INTAKE_PROC_RECORD_TYPE" id="2002" />
+			<db:data-type name="OK_INTAKE_PROC_TABLE" id="2003" />
+		</db:data-types>
+	</db:oracle-config>
+    <api-platform-gw:api apiName="${apiName}" version="${apiVersion}" flowRef="ts-onekey-intake-wrapper-main" create="true" apikitRef="ts-onekey-intake-wrapper-config" doc:name="API Autodiscovery" />
+</mule>

@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:configuration-api="http://www.mulesoft.org/schema/mule/configuration-api" xmlns:iqvia-logging="http://www.mulesoft.org/schema/mule/iqvia-logging" xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/iqvia-logging http://www.mulesoft.org/schema/mule/iqvia-logging/current/mule-iqvia-logging.xsd
+http://www.mulesoft.org/schema/mule/configuration-api http://www.mulesoft.org/schema/mule/configuration-api/current/mule-configuration-api.xsd">
+
+	<flow name="ts-onekey-intake-wrapper-implFlow" processingStrategy="synchronous">
+        <iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration" eventName="iqvia.intakewrapper.before.ts-config-db"  severity="INFO" doc:name="IQVIA Logging">
+            <iqvia-logging:meta ref="#[[&quot;jobId&quot;: flowVars.jobId]]"/>
+        </iqvia-logging:log-entries>
+       <!-- <configuration-api:get-get-tenants config-ref="Configuration_API__Basic_Authentication" sourceSystemCode="${ok.code}" doc:name="Configuration API - Get Tenants"/>-->
+         <http:request config-ref="HTTPRequestConfiguration-ConfigurationDB" path="${configurationAPI.path}" method="${configurationAPI.method}" doc:name="Get Tenant Configurations" metadata:id="15e58c7d-d823-4881-b01a-fa42c43824c8">
+            <http:request-builder>
+                <http:query-param paramName="sourceSystemCode" value="${ok.code}"/>
+            </http:request-builder>
+        </http:request>
+        <iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration" eventName="iqvia.intakewrapper.after.ts-config-db"  severity="INFO" doc:name="IQVIA Logging">
+            <iqvia-logging:meta ref="#[[&quot;jobId&quot;: flowVars.jobId]]"/>
+        </iqvia-logging:log-entries>
+		<dw:transform-message doc:name="Arranged by Tenant">
+			<dw:input-payload doc:sample="examples\configdb.json" />
+            <dw:set-payload resource="classpath:configsys_transform.dwl"/>
+		</dw:transform-message>
+		<foreach doc:name="For Each Tenant">
+			<set-variable variableName="tid" value="#[function:uuid]"
+				doc:name="tid" />
+            <async doc:name="Async">
+                <flow-ref name="ts-onekey-intake-wrapper-implFlow-tenant" doc:name="ts-onekey-intake-wrapper-implFlow-tenant"/>
+            </async>
+		</foreach>
+        <iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration" eventName="iqvia.intakewrapper.after.everything" transactionId="#[flowVars.tid]" severity="INFO" doc:name="IQVIA Logging">
+            <iqvia-logging:meta ref="#[[&quot;jobId&quot;: flowVars.jobId]]"/>
+        </iqvia-logging:log-entries>
+	</flow>
+	<flow name="ts-onekey-intake-wrapper-implFlow-tenant"
+		>
+		<dw:transform-message doc:name="Get Tenant Info">
+			<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload.tenantInfo]]></dw:set-payload>
+            <dw:set-variable variableName="tenantId"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.tenantInfo.tenantId[0]]]></dw:set-variable>
+		</dw:transform-message>
+		<foreach doc:name="For Each Country">
+            <dw:transform-message doc:name="Set Current Country">
+                <dw:set-variable variableName="currentCountry"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.country]]></dw:set-variable>
+            </dw:transform-message>
+			<flow-ref name="ts-onekey-intake-wrapper-implFlow-tenant-country"
+				doc:name="ts-onekey-intake-wrapper-implFlow-tenant-country" />
+            <dw:transform-message doc:name="Save Last Run">
+                <dw:set-variable variableName="dataRun"><![CDATA[%dw 1.0
+%output application/java
+---
+(flowVars.dataRun when (flowVars.dataRun !=null) otherwise []) ++ [{ country_code : flowVars.currentCountry, last_run_date: getTimeStamp(now)}]]]></dw:set-variable>
+            </dw:transform-message>
+		</foreach>
+        <flow-ref name="ts-stageddb-sys-read-publish" doc:name="ts-stageddb-sys-read-publish"/>
+        <choice doc:name="Choice">
+            <when expression="#[flowVars.executor=='POLLER']">
+                <flow-ref name="storeLastRun" doc:name="storeLastRun"/>
+            </when>
+            <otherwise>
+                <logger message="Manual Call - Not Saving Last Run" level="INFO" doc:name="Logger"/>
+            </otherwise>
+        </choice>
+        <flow-ref name="ts-stageddb-purge-job" doc:name="ts-stageddb-purge-job"/>
+        <exception-strategy ref="global-exception-handlerChoice_Exception_Strategy" doc:name="Reference Exception Strategy"/>
+
+	</flow>
+	<flow name="ts-onekey-intake-wrapper-implFlow-tenant-country"
+		processingStrategy="synchronous">
+		<logger message="TenantId #[flowVars.tenantId] - Country #[payload.country]" level="INFO"
+			doc:name="Logger" />
+        <flow-ref name="setDateRange" doc:name="setDateRange"/>
+
+		<dw:transform-message doc:name="Configure Dynamic Call">
+			<dw:set-variable variableName="internalHost"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.internalHost]]></dw:set-variable>
+			<dw:set-variable variableName="internalPort"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.internalPort]]></dw:set-variable>
+			<dw:set-variable variableName="internalBasePath"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.internalbasePath]]></dw:set-variable>
+            <dw:set-variable variableName="credentials"><![CDATA[%dw 1.0
+%output application/java
+---
+read( decode(payload.internalCredential), "application/json")]]></dw:set-variable>
+		</dw:transform-message>
+		<flow-ref name="ts-onekey-intake-wrapper-implFlow-tenant-callOkSysAPI"
+			doc:name="ts-onekey-intake-wrapper-implFlow-tenant-callOkSysAPI" />
+
+	</flow>
+	<flow name="ts-onekey-intake-wrapper-implFlow-tenant-callOkSysAPI" processingStrategy="synchronous">
+		<dw:transform-message doc:name="Store Payload and Build QueryParams">
+			<dw:set-variable variableName="requestContent"><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-variable>
+            <dw:set-variable variableName="queryParams"><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	(pageNumber: payload.pageNumber) when payload.pageNumber != null,
+	pageSize: p('oksys.pageSize'),
+	country: payload.country,
+	systemExternalCredentials: payload.externalCredential,
+	systemExternalPort: payload.externalPort,
+	systemExternalHost: payload.externalHost,
+	(requestId: payload.requestId) when payload.requestId != null,
+	(fromDate: payload.from) when payload.from != null,
+	(toDate: payload.to) when ((payload.to) != null)
+}]]></dw:set-variable>
+		</dw:transform-message>
+        <iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration" eventName="iqvia.intakewrapper.before.ts-onekey-sys" transactionId="#[flowVars.tid]" severity="INFO" doc:name="IQVIA Logging">
+            <iqvia-logging:meta ref="#[[&quot;jobId&quot;: flowVars.jobId, &quot;tenantId&quot; : flowVars.tenantId, &quot;country&quot; : flowVars.currentCountry, &quot;pageNumber&quot; : flowVars.queryParams.pageNumber ]]"/>
+        </iqvia-logging:log-entries>
+
+		<http:request config-ref="HTTPRequestConfiguration-OneKeySys"
+			path="${oksys.path}" method="${oksys.method}" doc:name="OK-Refresh"
+			metadata:id="6fe2b034-ba78-4be9-8951-313ca123fdd1">
+			<http:request-builder>
+                <http:query-params expression="#[flowVars.queryParams]"/>
+			</http:request-builder>
+		</http:request>
+        <iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration" eventName="iqvia.intakewrapper.after.ts-onekey-sys" transactionId="#[flowVars.tid]" severity="INFO" doc:name="IQVIA Logging">
+            <iqvia-logging:meta ref="#[[&quot;jobId&quot;: flowVars.jobId, &quot;tenantId&quot; : flowVars.tenantId, &quot;country&quot; : flowVars.currentCountry, &quot;pageNumber&quot; : flowVars.queryParams.pageNumber ]]"/>
+        </iqvia-logging:log-entries>
+		<dw:transform-message doc:name="Set Entities and Paging Information">
+			<dw:set-variable variableName="activities"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.entitiesUpdated.activities.*activityId when (sizeOf payload.entitiesUpdated.activities) != 0 otherwise []]]></dw:set-variable>
+			<dw:set-variable variableName="individuals"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.entitiesUpdated.activities.*individualId when (sizeOf payload.entitiesUpdated.activities) != 0 otherwise []]]></dw:set-variable>
+			<dw:set-variable variableName="workplaces"><![CDATA[%dw 1.0
+%output application/java
+---
+(payload.entitiesUpdated.activities.*workplaceId when (sizeOf payload.entitiesUpdated.activities) != 0 otherwise []) ++
+(payload.entitiesUpdated.workplaces.workplaceId when (sizeOf payload.entitiesUpdated.workplaces) != 0 otherwise [])]]></dw:set-variable>
+			<dw:set-variable variableName="hasNextPage"><![CDATA[%dw 1.0
+%output application/java
+---
+payload.pagination.lastPage == false]]></dw:set-variable>
+            <dw:set-variable variableName="page"><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	pageNumber: payload.pagination.currentPage,
+    requestId: payload.pagination.requestId
+}]]></dw:set-variable>
+		</dw:transform-message>
+        <flow-ref name="ts-stageddb-sys-insertentities" doc:name="ts-stageddb-sys-insertentities"/>
+
+		<choice doc:name="Choice">
+			<when expression="#[flowVars.hasNextPage]">
+                <dw:transform-message doc:name="Restore Payload" metadata:id="7899015d-8433-43c5-90fa-63c3a9794224">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+  	  country: flowVars.requestContent.country,
+  	  from: flowVars.requestContent.from,
+      to: flowVars.requestContent.to,
+      pageNumber: flowVars.page.pageNumber + 1,
+      requestId: flowVars.page.requestId,
+      tenant: flowVars.requestContent.tenant,
+      externalBasePath: flowVars.requestContent.externalBasePath,
+  	  externalPort: flowVars.requestContent.externalPort,
+  	  externalHost: flowVars.requestContent.externalHost,
+      externalCredential: flowVars.requestContent.externalCredential,
+      internalBasePath: flowVars.requestContent.internalBasePath,
+  	  internalPort: flowVars.requestContent.internalPort,
+  	  internalHost: flowVars.requestContent.internalHost,
+      internalCredential: flowVars.requestContent.internalCredential
+}]]></dw:set-payload>
+                </dw:transform-message>
+				<flow-ref name="ts-onekey-intake-wrapper-implFlow-tenant-callOkSysAPI"
+					doc:name="ts-onekey-intake-wrapper-implFlow-tenant-callOkSysAPI" />
+			</when>
+			<otherwise>
+				<logger message="No more records" level="INFO" doc:name="End Paging" />
+			</otherwise>
+		</choice>
+	</flow>
+</mule>

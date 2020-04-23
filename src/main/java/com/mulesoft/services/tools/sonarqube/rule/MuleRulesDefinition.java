@@ -20,7 +20,7 @@ import com.mulesoft.services.tools.sonarqube.properties.MuleProperties;
 import com.mulesoft.services.tools.validation.Constants;
 import com.mulesoft.services.tools.validation.Constants.Severities;
 import com.mulesoft.services.tools.validation.Constants.Types;
-import com.mulesoft.services.tools.validation.RuleFactory;
+import com.mulesoft.services.tools.validation.consumer.RuleFactory;
 import com.mulesoft.services.tools.validation.rules.Ruleset;
 import com.mulesoft.services.tools.validation.rules.Rulestore;
 

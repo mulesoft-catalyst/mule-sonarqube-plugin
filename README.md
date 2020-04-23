@@ -8,6 +8,12 @@ Sonarqube plugin:
 
 ## Prerequisites
 
+## Install mule-validation-xpath-core dependency
+
+1. Download the module source code.
+2. Open a terminal window and browse to module mule-validation-xpath-core folder.
+3. Install this module by running `mvn install`.
+
 ## Plugin Generation
 
 1. Download the module source code.
@@ -53,10 +59,6 @@ Sonarqube plugin:
 1. Analyze the project executing mvn sonar:sonar -Dsonar.sources=src
 
 ## Release Notes
-
-#### 1.0.1
-##### Changes
-	- Refactor - One single project. mule-validation-xpath-core dependency is not longer needed
 
 #### 1.0.0
 ##### Changes

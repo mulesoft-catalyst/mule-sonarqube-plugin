@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata"
+	xmlns:iqvia-logging="http://www.mulesoft.org/schema/mule/iqvia-logging"
+	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:anypoint-mq="http://www.mulesoft.org/schema/mule/anypoint-mq"
+	xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/anypoint-mq http://www.mulesoft.org/schema/mule/anypoint-mq/current/mule-anypoint-mq.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/iqvia-logging http://www.mulesoft.org/schema/mule/iqvia-logging/current/mule-iqvia-logging.xsd">
+	<flow name="ts-stageddb-sys-insertentities" processingStrategy="synchronous">
+		<iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration"
+			eventName="iqvia.intakewrapper.before.stagingdb" transactionId="#[flowVars.tid]"
+			severity="INFO" doc:name="IQVIA Logging">
+			<iqvia-logging:meta
+				ref="#[[&quot;jobId&quot;: flowVars.jobId, &quot;tenantId&quot; : flowVars.tenantId, &quot;country&quot; : flowVars.currentCountry, &quot;pageNumber&quot; : flowVars.page.pageNumber ]]" />
+		</iqvia-logging:log-entries>
+		<choice doc:name="Has Activities">
+			<when expression="#[flowVars.activities.size() &gt;0]">
+				<flow-ref name="ts-stageddb-insert-activities" doc:name="ts-stageddb-insert-activities" />
+			</when>
+			<otherwise>
+				<iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration"
+					eventName="iqvia.intakewrapper.stagingdb.insertActivities"
+					transactionId="#[flowVars.tid]" severity="INFO" doc:name="IQVIA Logging">
+					<iqvia-logging:meta
+						ref="#[[&quot;jobId&quot;: flowVars.jobId, &quot;tenantId&quot; : flowVars.tenantId, &quot;country&quot; : flowVars.currentCountry, &quot;message&quot; : &quot;Not Activities&quot; ]]" />
+				</iqvia-logging:log-entries>
+			</otherwise>
+		</choice>
+		<choice doc:name="Has Workplaces">
+			<when expression="#[flowVars.workplaces.size() &gt;0]">
+				<flow-ref name="ts-stageddb-insert-workplaces" doc:name="ts-stageddb-insert-workplaces" />
+			</when>
+			<otherwise>
+				<iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration"
+					eventName="iqvia.intakewrapper.stagingdb.insertWorkplaces"
+					transactionId="#[flowVars.tid]" severity="INFO" doc:name="IQVIA Logging">
+					<iqvia-logging:meta
+						ref="#[[&quot;jobId&quot;: flowVars.jobId, &quot;tenantId&quot; : flowVars.tenantId, &quot;country&quot; : flowVars.currentCountry, &quot;message&quot; : &quot;Not Workplaces&quot; ]]" />
+				</iqvia-logging:log-entries>
+			</otherwise>
+		</choice>
+		<choice doc:name="Has Individuals">
+			<when expression="#[flowVars.individuals.size() &gt;0]">
+				<flow-ref name="ts-stageddb-insert-individuals" doc:name="ts-stageddb-insert-individuals" />
+			</when>
+			<otherwise>
+                <iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration" eventName="iqvia.intakewrapper.stagingdb.insertIndividuals" transactionId="#[flowVars.tid]" severity="INFO" doc:name="IQVIA Logging">
+                    <iqvia-logging:meta ref="#[[&quot;jobId&quot;: flowVars.jobId, &quot;tenantId&quot; : flowVars.tenantId,&quot;country&quot; : flowVars.currentCountry, &quot;message&quot; : &quot;Not Individuals&quot; ]]"/>
+                </iqvia-logging:log-entries>
+			</otherwise>
+		</choice>
+		<iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration"
+			eventName="iqvia.intakewrapper.before.stagingdb" transactionId="#[flowVars.tid]"
+			severity="INFO" doc:name="IQVIA Logging">
+			<iqvia-logging:meta
+				ref="#[[&quot;jobId&quot;: flowVars.jobId, &quot;tenantId&quot; : flowVars.tenantId, &quot;country&quot; : flowVars.currentCountry, &quot;pageNumber&quot; :  flowVars.page.pageNumber ]]" />
+		</iqvia-logging:log-entries>
+	</flow>
+	<flow name="ts-stageddb-sys-read-publish" processingStrategy="synchronous">
+		<iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration"
+			eventName="iqvia.intakewrapper.before.stagingdb.publish"
+			transactionId="#[flowVars.tid]" severity="INFO" doc:name="IQVIA Logging" >
+            <iqvia-logging:meta ref="#[[&quot;jobId&quot;: flowVars.jobId, &quot;tenantId&quot; : flowVars.tenantId ]]"/>
+        </iqvia-logging:log-entries>
+		<flow-ref name="ts-stageddb-process-activities" doc:name="ts-stageddb-process-activities" />
+		<flow-ref name="ts-stageddb-process-workplaces" doc:name="ts-stageddb-process-workplaces" />
+		<flow-ref name="ts-stageddb-process-individuals" doc:name="ts-stageddb-process-individuals" />
+        <iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration" eventName="iqvia.intakewrapper.after.stagingdb.publish" transactionId="#[flowVars.tid]" severity="INFO" doc:name="IQVIA Logging">
+            <iqvia-logging:meta ref="#[[&quot;jobId&quot;: flowVars.jobId, &quot;tenantId&quot; : flowVars.tenantId ]]"/>
+        </iqvia-logging:log-entries>
+	</flow>
+	<sub-flow name="ts-stageddb-insert-activities">
+		<transactional action="ALWAYS_BEGIN" doc:name="Transactional">
+			<set-payload
+				value="#[dbCreateArray('OracleDeDupConfiguration','ONEKEY_ID_ARR',flowVars.activities)]"
+				doc:name="Set Payload - Create Array" />
+			<db:stored-procedure config-ref="OracleDeDupConfiguration"
+				doc:name="Insert Activities">
+				<db:parameterized-query><![CDATA[call onekey_pkg.populate_stg_ok_act(:p_tid,:p_tenant_id,:p_onekey_id_arr,:resultSet)]]></db:parameterized-query>
+				<db:in-param name="p_tid" type="VARCHAR" value="#[flowVars.tid]" />
+				<db:in-param name="p_tenant_id" type="VARCHAR"
+					value="#[flowVars.tenantId]" />
+				<db:in-param name="p_onekey_id_arr" type="ONEKEY_ID_ARR"
+					value="#[payload]" />
+				<db:out-param name="resultSet" type="CURSOR" />
+			</db:stored-procedure>
+		</transactional>
+	</sub-flow>
+	<sub-flow name="ts-stageddb-insert-individuals">
+		<transactional action="ALWAYS_BEGIN" doc:name="Transactional">
+			<set-payload
+				value="#[dbCreateArray('OracleDeDupConfiguration','ONEKEY_ID_ARR',flowVars.individuals)]"
+				doc:name="Set Payload - Create Array" />
+			<db:stored-procedure config-ref="OracleDeDupConfiguration"
+				doc:name="Insert Individuals">
+				<db:parameterized-query><![CDATA[call onekey_pkg.populate_stg_ok_ind(:p_tid,:p_tenant_id,:p_onekey_id_arr,:resultSet)]]></db:parameterized-query>
+				<db:in-param name="p_tid" type="VARCHAR" value="#[flowVars.tid]" />
+				<db:in-param name="p_tenant_id" type="VARCHAR"
+					value="#[flowVars.tenantId]" />
+				<db:in-param name="p_onekey_id_arr" type="ONEKEY_ID_ARR"
+					value="#[payload]" />
+				<db:out-param name="resultSet" type="CURSOR" />
+			</db:stored-procedure>
+		</transactional>
+	</sub-flow>
+	<sub-flow name="ts-stageddb-insert-workplaces">
+		<transactional action="ALWAYS_BEGIN" doc:name="Transactional">
+			<set-payload
+				value="#[dbCreateArray('OracleDeDupConfiguration','ONEKEY_ID_ARR',flowVars.workplaces)]"
+				doc:name="Set Payload - Create Array" />
+			<db:stored-procedure config-ref="OracleDeDupConfiguration"
+				doc:name="Insert Workplaces">
+                <db:parameterized-query><![CDATA[call onekey_pkg.populate_stg_ok_wkp(:p_tid,:p_tenant_id,:p_onekey_id_arr,:resultSet)]]></db:parameterized-query>
+                <db:in-param name="p_tid" type="VARCHAR" value="#[flowVars.tid]"/>
+                <db:in-param name="p_tenant_id" type="VARCHAR" value="#[flowVars.tenantId]"/>
+                <db:in-param name="p_onekey_id_arr" type="ONEKEY_ID_ARR" value="#[payload]"/>
+                <db:out-param name="resultSet" type="CURSOR"/>
+			</db:stored-procedure>
+		</transactional>
+	</sub-flow>
+	<flow name="ts-stageddb-process-workplaces">
+		<transactional action="ALWAYS_BEGIN" doc:name="Transactional">
+			<db:select config-ref="OracleDeDupConfiguration" streaming="true"
+				fetchSize="50" doc:name="Get Workplaces">
+				<db:parameterized-query><![CDATA[Select * from stg_ok_wkp where job_id = #[flowVars.tid] and tenant_id = #[flowVars.tenantId]]]></db:parameterized-query>
+			</db:select>
+
+			<foreach batchSize="${db.batch.fetch}" doc:name="For Each">
+				<dw:transform-message doc:name="Transform Message">
+					<dw:set-payload><![CDATA[%dw 1.0
+%output application/json encoding="UTF-8"
+---
+{
+  "transactionId": flowVars.tid,
+  "tenantId": flowVars.tenantId,
+  "sourceCode": p('ok.code'),
+  "entityDomainCode": p('entity.domainCode'),
+  "entityType": p('entity.workplace.type'),
+  "sourceEntityIds": payload.ONEKEY_ID
+}]]></dw:set-payload>
+				</dw:transform-message>
+				<iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration"
+					eventName="iqvia.intakewrapper.stagingdb.before.publishWorkplaces"
+					transactionId="#[flowVars.tid]" severity="INFO" doc:name="IQVIA Logging">
+					<iqvia-logging:meta
+						ref="#[[&quot;jobId&quot;: flowVars.jobId, &quot;tenantId&quot; : flowVars.tenantId,  &quot;message&quot; : &quot;Sending Workplaces to queue&quot; ]]" />
+				</iqvia-logging:log-entries>
+				<anypoint-mq:publish config-ref="Anypoint_MQ_Configuration"
+					destination="${anypointmq.queueName}" doc:name="Anypoint MQ" />
+			</foreach>
+		</transactional>
+	</flow>
+	<flow name="ts-stageddb-process-individuals">
+		<transactional action="ALWAYS_BEGIN" doc:name="Transactional">
+			<db:select config-ref="OracleDeDupConfiguration" streaming="true"
+				fetchSize="50" doc:name="Get Individuals">
+				<db:parameterized-query><![CDATA[Select * from stg_ok_ind where job_id = #[flowVars.tid] and tenant_id = #[flowVars.tenantId]]]></db:parameterized-query>
+			</db:select>
+
+			<foreach batchSize="${db.batch.fetch}" doc:name="For Each">
+				<dw:transform-message doc:name="Transform Message">
+					<dw:set-payload><![CDATA[%dw 1.0
+%output application/json encoding="UTF-8"
+---
+{
+  "transactionId": flowVars.tid,
+  "tenantId": flowVars.tenantId,
+  "sourceCode": p('ok.code'),
+  "entityDomainCode": p('entity.domainCode'),
+  "entityType": p('entity.individual.type'),
+  "sourceEntityIds": payload.ONEKEY_ID
+}]]></dw:set-payload>
+				</dw:transform-message>
+				<iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration"
+					eventName="iqvia.intakewrapper.stagingdb.before.publishIndividuals"
+					transactionId="#[flowVars.tid]" severity="INFO" doc:name="IQVIA Logging">
+					<iqvia-logging:meta
+						ref="#[[&quot;jobId&quot;: flowVars.jobId, &quot;tenantId&quot; : flowVars.tenantId,  &quot;message&quot; : &quot;Sending Individuals to queue&quot; ]]" />
+				</iqvia-logging:log-entries>
+				<anypoint-mq:publish config-ref="Anypoint_MQ_Configuration"
+					destination="${anypointmq.queueName}" doc:name="Anypoint MQ" />
+
+			</foreach>
+		</transactional>
+	</flow>
+	<flow name="ts-stageddb-process-activities">
+		<transactional action="ALWAYS_BEGIN" doc:name="Transactional">
+			<db:select config-ref="OracleDeDupConfiguration" streaming="true"
+				fetchSize="50" doc:name="Get Activities">
+				<db:parameterized-query><![CDATA[Select * from stg_ok_act where job_id = #[flowVars.tid] and tenant_id = #[flowVars.tenantId]]]></db:parameterized-query>
+			</db:select>
+
+			<foreach batchSize="${db.batch.fetch}" doc:name="For Each">
+				<dw:transform-message doc:name="Transform Message">
+					<dw:set-payload><![CDATA[%dw 1.0
+%output application/json encoding="UTF-8"
+---
+{
+  "transactionId": flowVars.tid,
+  "tenantId": flowVars.tenantId,
+  "sourceCode": p('ok.code'),
+  "entityDomainCode": p('entity.domainCode'),
+  "entityType": p('entity.activity.type'),
+  "sourceEntityIds": payload.ONEKEY_ID
+}]]></dw:set-payload>
+				</dw:transform-message>
+                <iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration" eventName="iqvia.intakewrapper.stagingdb.before.publishActivities" transactionId="#[flowVars.tid]" severity="INFO" doc:name="IQVIA Logging">
+                    <iqvia-logging:meta ref="#[[&quot;jobId&quot;: flowVars.jobId, &quot;tenantId&quot; : flowVars.tenantId,  &quot;message&quot; : &quot;Sending Activities to queue&quot; ]]"/>
+                </iqvia-logging:log-entries>
+				<anypoint-mq:publish config-ref="Anypoint_MQ_Configuration"
+					destination="${anypointmq.queueName}" doc:name="Anypoint MQ" />
+			</foreach>
+		</transactional>
+	</flow>
+	<flow name="ts-stageddb-purge-job">
+        <iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration" eventName="iqvia.intakewrapper.stagingdb.before.purging" transactionId="#[flowVars.tid]" severity="INFO" doc:name="IQVIA Logging">
+            <iqvia-logging:meta ref="#[[&quot;jobId&quot;: flowVars.jobId, &quot;tenantId&quot; : flowVars.tenantId]]"/>
+        </iqvia-logging:log-entries>
+		<db:stored-procedure config-ref="OracleDeDupConfiguration"
+			doc:name="Purge Stage DB - JobId">
+            <db:parameterized-query><![CDATA[call onekey_pkg.purge_stage_jobid(:p_tid)]]></db:parameterized-query>
+            <db:in-param name="p_tid" type="VARCHAR" value="#[flowVars.tid]"/>
+		</db:stored-procedure>
+        <iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration" eventName="iqvia.intakewrapper.stagingdb.after.purging" transactionId="#[flowVars.tid]" severity="INFO" doc:name="QVIA Logging">
+            <iqvia-logging:meta ref="#[[&quot;jobId&quot;: flowVars.jobId, &quot;tenantId&quot; : flowVars.tenantId]]"/>
+        </iqvia-logging:log-entries>
+	</flow>
+</mule>

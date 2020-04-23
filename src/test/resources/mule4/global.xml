@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd 
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+	<configuration-properties doc:name="properties-config"
+		doc:id="f527dbd1-8392-4ca6-bbb0-fc2e2548b788" file="config/configuration-${mule.env}.yaml" />
+	<configuration-properties doc:name="common-properties-config"
+		doc:id="aa37aebf-ff75-4560-b247-efd56e9a8d5d" file="config/configuration-common.yaml" />
+	<http:listener-config name="http-listener-config"
+		doc:name="HTTP Listener config" doc:id="e5216fcd-7598-42f9-ad44-f7cbc444fbd8">
+		<http:listener-connection host="0.0.0.0"
+			port="${https.port}" protocol="HTTPS">
+			<!-- NOTES TO SECURITY TEAM, VULNERABILITY SCANNERS: this keystore is 
+				not even used. It is replaced at deploy-time (by CloudHub) with a real CA-certificate 
+				whose password is not what is entered here. This is only for local-execution/development -->
+			<tls:context>
+				<tls:key-store type="jks" path="localhost-keystore.jks"
+					alias="${https.alias}" keyPassword="${https.keyPassword}" password="${https.keyStorePassword}" />
+			</tls:context>
+		</http:listener-connection>
+	</http:listener-config>
+	<db:config name="DB_Config1" doc:name="Database Config" doc:id="aac9eb22-2b02-450e-bd87-a0802d805448">
+		<db:mssql-connection host="${db.host}" instanceName="${db.instance}" port="${db.port}" user="${secure::db.user}" databaseName="${db.name}" password="${secure::db.password}">
+			<reconnection >
+				<reconnect frequency="3000" />
+			</reconnection>
+		</db:mssql-connection>
+	</db:config>
+	
+	<os:config name="ObjectStoreConfig" doc:name="ObjectStore Config" doc:id="ec00bc17-f64e-4f08-ad35-e5d18c106d1f" >
+		<os:connection />
+	</os:config>
+	<os:object-store name="nectWatermark" doc:name="Object store" doc:id="7b7c645a-9774-4f84-816e-54b91c0ea10c" config-ref="ObjectStoreConfig"/>
+	<os:object-store name="groupInfo" doc:name="Object store" doc:id="a3a86bf6-f264-4ffb-8978-f53119ddbdf9" config-ref="ObjectStoreConfig" />
+	<salesforce:sfdc-config name="SalesforceConfig" doc:name="Salesforce Config" doc:id="03698215-23aa-48ad-a92e-b81877c4ac9f" >
+		<salesforce:cached-basic-connection username="${secure::sfdc.user}" password="${secure::sfdc.password}" securityToken="${secure::sfdc.token}" url="https://test.salesforce.com/services/Soap/u/46.0"/>
+	</salesforce:sfdc-config>
+	<api-gateway:autodiscovery apiId="${api.id}" doc:name="API Autodiscovery" doc:id="6525268b-af87-4c09-8c2e-e9f9360c2e9c" flowRef="dw-sfdc-sync-main" />
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="523e254a-9a5a-423a-aa58-cdedd06fb7a1" file="config/configuration-secure-${mule.env}.yaml" key="${mule.key}" />
+	
+	
+</mule>

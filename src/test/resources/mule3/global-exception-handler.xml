@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata"
+	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw"
+	xmlns:iqvia-logging="http://www.mulesoft.org/schema/mule/iqvia-logging"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/iqvia-logging http://www.mulesoft.org/schema/mule/iqvia-logging/current/mule-iqvia-logging.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+	<choice-exception-strategy
+		name="global-exception-handlerChoice_Exception_Strategy">
+		<catch-exception-strategy
+			when="#[exception.causedBy(com.mulesoft.weave.mule.exception.WeaveExecutionException)]"
+			doc:name="Dataweave Exception Strategy">
+			<set-variable variableName="exception" value="#[exception]"
+				doc:name="Set Exception Variable" />
+			<dw:transform-message doc:name="Transform Message"
+				metadata:id="47e58420-888f-4c78-9d0b-82334a2b732f">
+				<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	apiVersion: p('apiVersion'),
+	error: {
+		code: 500,
+		message: flowVars.exception.message when flowVars.exception.cause == null otherwise flowVars.exception.cause.detailMessage,
+		errors: [{
+			domain: p('app.name'),
+			reason: "Transformation Exception",
+			message: flowVars.exception.message when flowVars.exception.cause == null otherwise flowVars.exception.cause.detailMessage,
+			(transactionId: flowVars.tid) when flowVars.tid != null
+		}]
+	}
+}]]></dw:set-payload>
+			</dw:transform-message>
+			<flow-ref name="global-exception-handlerFlow" doc:name="Flow Reference" />
+		</catch-exception-strategy>
+		<catch-exception-strategy doc:name="HTTP Exception Strategy - Get Tenant Configurations"
+			when="#[exception.causedBy(org.mule.module.http.internal.request.ResponseValidatorException) &amp;&amp; exception.info.get('Element').contains('Get Tenant')]">
+			<set-variable variableName="exception" value="#[exception]"
+				doc:name="Set Exception Variable" />
+			<dw:transform-message doc:name="Transform Message">
+				<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	apiVersion: p('apiVersion'),
+	error: {
+		code: 500,
+		message: flowVars.exception.message when flowVars.exception.cause == null otherwise flowVars.exception.cause.detailMessage,
+		errors: [{
+			domain: p('app.name'),
+			reason: "Http Exception - Get Tenant Configurations",
+			message: flowVars.exception.message when flowVars.exception.cause == null otherwise flowVars.exception.cause.detailMessage,
+			(transactionId: flowVars.tid) when flowVars.tid != null
+		}]
+	}
+}]]></dw:set-payload>
+			</dw:transform-message>
+			<flow-ref name="global-exception-handlerFlow" doc:name="Flow Reference" />
+		</catch-exception-strategy>	
+		<catch-exception-strategy doc:name="HTTP Exception Strategy - OK Sys - refresh"
+			when="#[exception.causedBy(org.mule.module.http.internal.request.ResponseValidatorException) &amp;&amp; exception.info.get('Element').contains('OK-Refresh')]">
+			<set-variable variableName="exception" value="#[exception]"
+				doc:name="Set Exception Variable" />
+			<dw:transform-message doc:name="Transform Message">
+				<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	apiVersion: p('apiVersion'),
+	error: {
+		code: 500,
+		message: flowVars.exception.message when flowVars.exception.cause == null otherwise flowVars.exception.cause.detailMessage,
+		errors: [{
+			domain: p('app.name'),
+			reason: "Http Exception - OK Sys - refresh",
+			message: flowVars.exception.message when flowVars.exception.cause == null otherwise flowVars.exception.cause.detailMessage,
+			(transactionId: flowVars.tid) when flowVars.tid != null
+		}]
+	}
+}]]></dw:set-payload>
+			</dw:transform-message>
+			<flow-ref name="global-exception-handlerFlow" doc:name="Flow Reference" />
+		</catch-exception-strategy>		
+		<catch-exception-strategy doc:name="JDBC Exception Strategy - Insert Entities"
+			when="#[exception.info.get('Element XML').contains('dbCreateArray')]">
+			<set-variable variableName="exception" value="#[exception]"
+				doc:name="Set Exception Variable" />
+			<dw:transform-message doc:name="Transform Message">
+				<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	apiVersion: p('apiVersion'),
+	error: {
+		code: 500,
+		message: flowVars.exception.message when flowVars.exception.cause == null otherwise flowVars.exception.cause.detailMessage,
+		errors: [{
+			domain: p('app.name'),
+			reason: "JDBC Exception - Insert Entities",
+			message: flowVars.exception.message when flowVars.exception.cause == null otherwise flowVars.exception.cause.detailMessage,
+			(transactionId: flowVars.tid) when flowVars.tid != null
+		}]
+	}
+}]]></dw:set-payload>
+			</dw:transform-message>
+			<flow-ref name="global-exception-handlerFlow" doc:name="Flow Reference" />
+		</catch-exception-strategy>
+		<catch-exception-strategy doc:name="SQL Exception Strategy - Get Entities"
+			when="#[exception.causedBy(java.sql.SQLException)]">
+			<set-variable variableName="exception" value="#[exception]"
+				doc:name="Set Exception Variable" />
+			<dw:transform-message doc:name="Transform Message">
+				<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	apiVersion: p('apiVersion'),
+	error: {
+		code: 500,
+		message: flowVars.exception.message when flowVars.exception.cause == null otherwise flowVars.exception.cause.detailMessage,
+		errors: [{
+			domain: p('app.name'),
+			reason: "SQL Exception - Get Entities",
+			message: flowVars.exception.message when flowVars.exception.cause == null otherwise flowVars.exception.cause.detailMessage,
+			(transactionId: flowVars.tid) when flowVars.tid != null
+		}]
+	}
+}]]></dw:set-payload>
+			</dw:transform-message>
+			<flow-ref name="global-exception-handlerFlow" doc:name="Flow Reference" />
+		</catch-exception-strategy>
+				
+		<catch-exception-strategy doc:name="Default Exception Strategy">
+			<set-variable variableName="exception" value="#[exception]"
+				doc:name="Set Exception Variable" />
+			<dw:transform-message doc:name="Transform Message">
+				<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	apiVersion: p('apiVersion'),
+	error: {
+		code: 500,
+		message: flowVars.exception.message when flowVars.exception.cause == null otherwise flowVars.exception.cause.detailMessage,
+		errors: [{
+			domain: p('app.name'),
+			reason: "Default Exception",
+			message: flowVars.exception.message when flowVars.exception.cause == null otherwise flowVars.exception.cause.detailMessage,
+			(transactionId: flowVars.tid) when flowVars.tid != null
+		}]
+	}
+}]]></dw:set-payload>
+			</dw:transform-message>
+			<flow-ref name="global-exception-handlerFlow" doc:name="Flow Reference" />
+		</catch-exception-strategy>
+	</choice-exception-strategy>
+	<flow name="global-exception-handlerFlow">
+		<message-properties-transformer
+			doc:name="Add Properties">
+			<add-message-property key="http.status" value="500" />
+		</message-properties-transformer>
+		<iqvia-logging:log-error-entries
+			config-ref="IQVIA_Logging__Configuration" errorDetails="#[payload.error.message]"
+			eventName="#[payload.error.errors[0].reason]" transactionId="#[flowVars.tid]"
+			doc:name="IQVIA Logging" kbArticleURL="#[payload.kbArticleUrl]" />
+        <dw:transform-message doc:name="to Json">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json
+---
+payload]]></dw:set-payload>
+        </dw:transform-message>
+	</flow>
+</mule>

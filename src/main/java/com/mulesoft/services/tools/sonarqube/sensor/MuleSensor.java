@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.jdom2.input.SAXBuilder;
+import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
@@ -46,8 +47,10 @@ public class MuleSensor implements Sensor {
 
 		FileSystem fs = context.fileSystem();
 
+		FilePredicates p = fs.predicates();
 		Map<RuleKey, List<NewIssue>> issues = new HashMap<RuleKey, List<NewIssue>>();
-		fs.inputFiles(new MuleFilePredicate()).forEach(new SonarRuleConsumer(getLanguage(context), context, issues));
+		fs.inputFiles(p.and(p.hasLanguage(MuleLanguage.LANGUAGE_KEY), new MuleFilePredicate()))
+				.forEach(new SonarRuleConsumer(getLanguage(context), context, issues));
 
 		// Iterate and save all the issues
 		for (Iterator<List<NewIssue>> newIssueListIterator = issues.values().iterator(); newIssueListIterator

@@ -59,7 +59,7 @@ public class SonarRuleConsumer implements Consumer<InputFile> {
 	@Override
 	public void accept(InputFile t) {
 		if (logger.isDebugEnabled()) {
-			logger.debug("Validating file:" + t.filename());
+			logger.debug("Validating mule file:" + t.filename());
 		}
 
 		Collection<ActiveRule> activeRules = this.context.activeRules().findByLanguage(MuleLanguage.LANGUAGE_KEY);

@@ -5,8 +5,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
 
-import javax.xml.bind.JAXBException;
-
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
@@ -30,11 +28,6 @@ public class Mule4Test {
 		testDirectory = System.getProperty("user.dir") + File.separator + testPath;
 	}
 
-	@Test
-	public void testValidateDirectory() throws JAXBException, IOException {
-		System.out.println("Working Directory = " + System.getProperty("user.dir"));
-		val.validate(new File(testDirectory));
-	}
 
 	@Test
 	public void testRuleCountSubFlow() throws JDOMException, IOException {

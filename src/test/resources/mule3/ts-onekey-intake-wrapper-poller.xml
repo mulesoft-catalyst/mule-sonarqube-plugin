@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:iqvia-logging="http://www.mulesoft.org/schema/mule/iqvia-logging" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/iqvia-logging http://www.mulesoft.org/schema/mule/iqvia-logging/current/mule-iqvia-logging.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd">
+	<flow name="ts-onekey-intake-wrapper-poller" processingStrategy="synchronous">
+		<poll doc:name="Twice a Day">
+			<fixed-frequency-scheduler frequency="${poller.frequency}" timeUnit="HOURS" startDelay="${poller.delay}"/>
+            <logger message="Starting Polling" level="INFO" doc:name="Logger"/>
+
+		</poll>
+        <dw:transform-message doc:name="Setting Executor">
+            <dw:set-variable variableName="executor"><![CDATA[%dw 1.0
+%output application/java
+---
+"POLLER"]]></dw:set-variable>
+        </dw:transform-message>
+        <set-variable variableName="jobId" value="#[function:uuid]" doc:name="jobId"/>
+        <iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration" eventName="iqvia.intakewrapper.poller.start"  severity="INFO" doc:name="IQVIA Logging">
+            <iqvia-logging:meta ref="#[[&quot;message&quot;: payload]]"/>
+        </iqvia-logging:log-entries>
+
+		<flow-ref name="ts-onekey-intake-wrapper-implFlow" doc:name="ts-onekey-intake-wrapper-implFlow" />
+        <exception-strategy ref="global-exception-handlerChoice_Exception_Strategy" doc:name="Reference Exception Strategy"/>
+	</flow>
+</mule>

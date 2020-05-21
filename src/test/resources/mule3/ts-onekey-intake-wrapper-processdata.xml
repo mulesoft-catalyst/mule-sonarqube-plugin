@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:metadata="http://www.mulesoft.org/schema/mule/metadata" xmlns:iqvia-logging="http://www.mulesoft.org/schema/mule/iqvia-logging" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/iqvia-logging http://www.mulesoft.org/schema/mule/iqvia-logging/current/mule-iqvia-logging.xsd">
+	<flow name="setDateRange" processingStrategy="synchronous">
+		<dw:transform-message doc:name="Store Payload">
+			<dw:set-variable variableName="tempPayload"><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-variable>
+		</dw:transform-message>
+		<choice doc:name="Choice Caller">
+			<when expression="#[flowVars.executor == 'API']">
+				<dw:transform-message doc:name="Setting Range from Input Data">
+					<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+flowVars.tempPayload ++ flowVars.dateRange]]></dw:set-payload>
+				</dw:transform-message>
+			</when>
+			<otherwise>
+				<db:stored-procedure config-ref="OracleDeDupConfiguration"
+					doc:name="Database">
+					<db:parameterized-query><![CDATA[call ONEKEYPROC_PKG.retrieve(:p_tenant_id,:p_country_code,:p_lastrun)]]></db:parameterized-query>
+					<db:in-param name="p_tenant_id" value="#[payload.tenantId]" />
+					<db:in-param name="p_country_code" value="#[payload.country]" />
+					<db:out-param name="p_lastrun" type="TIMESTAMP" />
+				</db:stored-procedure>
+				<choice doc:name="Has Last Run">
+					<when expression="#[payload.p_lastrun == null]">
+						<dw:transform-message doc:name="Setting null range">
+							<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+flowVars.tempPayload ++ {to:null} ++ {from:null}]]></dw:set-payload>
+						</dw:transform-message>
+					</when>
+					<otherwise>
+						<dw:transform-message doc:name="Setting last run">
+							<dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+%var currentTime = now
+---
+flowVars.tempPayload ++ { to: (currentTime >> |-00:00|) as :string {format: "YYYY-MM-dd'T'HH:mm:ssX"} } ++ { from : (getCalendar(payload.p_lastrun) >> |-00:00|) as :string {format: "YYYY-MM-dd'T'HH:mm:ssX"}}]]></dw:set-payload>
+						</dw:transform-message>
+					</otherwise>
+				</choice>
+			</otherwise>
+		</choice>
+		<dw:transform-message doc:name="Null Temp Payload">
+			<dw:set-variable variableName="tempPayload"><![CDATA[%dw 1.0
+%output application/java
+---
+null]]></dw:set-variable>
+		</dw:transform-message>
+	</flow>
+	<flow name="storeLastRun" processingStrategy="synchronous">
+        <iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration" eventName="iqvia.intakewrapper.before.stagingdb.storelastrun" transactionId="#[flowVars.tid]" severity="INFO" doc:name="IQVIA Logging">
+            <iqvia-logging:meta ref="#[[&quot;jobId&quot;: flowVars.jobId, &quot;tenantId&quot; : flowVars.tenantId]]"/>
+        </iqvia-logging:log-entries>
+        <ee:multi-transactional action="BEGIN_OR_JOIN" doc:name="Transactional">
+            <set-variable variableName="StructArrayList" value="#[new java.util.ArrayList()]" doc:name="Create ArrayList"/>
+            <foreach collection="#[flowVars.dataRun]" counterVariableName="counterStructIndex" doc:name="For Each">
+                <expression-component doc:name="Create Struct"><![CDATA[StructArrayList.add(dbCreateStruct('OracleDeDupConfiguration','OK_INTAKE_PROC_RECORD_TYPE',(ArrayList)payload.values()));]]></expression-component>
+            </foreach>
+            <db:stored-procedure config-ref="OracleDeDupConfiguration" doc:name="Insert Last Runs">
+                <db:parameterized-query><![CDATA[call ONEKEYPROC_PKG.store_array(:p_tenant_id,:p_data)]]></db:parameterized-query>
+                <db:in-param name="p_tenant_id" type="VARCHAR" value="#[flowVars.tenantId]"/>
+                <db:in-param name="p_data" type="OK_INTAKE_PROC_TABLE" value="#[dbCreateArray('OracleDeDupConfiguration','OK_INTAKE_PROC_TABLE',flowVars.StructArrayList)]"/>
+            </db:stored-procedure>
+        </ee:multi-transactional>
+        <iqvia-logging:log-entries config-ref="IQVIA_Logging__Configuration" eventName="iqvia.intakewrapper.after.stagingdb.storelastrun" transactionId="#[flowVars.tid]" severity="INFO" doc:name="IQVIA Logging">
+            <iqvia-logging:meta ref="#[[&quot;jobId&quot;: flowVars.jobId, &quot;tenantId&quot; : flowVars.tenantId]]"/>
+        </iqvia-logging:log-entries></flow>
+</mule>

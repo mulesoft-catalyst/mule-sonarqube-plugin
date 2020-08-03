@@ -7,6 +7,7 @@ import org.sonar.api.config.PropertyDefinition;
 import org.sonar.api.resources.Qualifiers;
 
 import com.mulesoft.services.tools.sonarqube.language.MuleLanguage;
+import com.mulesoft.services.tools.sonarqube.language.RAMLLanguage;
 import com.mulesoft.services.tools.sonarqube.measures.MuleFlowCount;
 import com.mulesoft.services.tools.sonarqube.measures.MuleSizeRating;
 import com.mulesoft.services.tools.sonarqube.measures.MuleSubFlowCount;
@@ -16,8 +17,11 @@ import com.mulesoft.services.tools.sonarqube.metrics.CoverageSensor;
 import com.mulesoft.services.tools.sonarqube.metrics.MUnitSensor;
 import com.mulesoft.services.tools.sonarqube.metrics.MuleMetrics;
 import com.mulesoft.services.tools.sonarqube.profile.MuleQualityProfile;
+import com.mulesoft.services.tools.sonarqube.profile.RAMLQualityProfile;
 import com.mulesoft.services.tools.sonarqube.rule.MuleRulesDefinition;
+import com.mulesoft.services.tools.sonarqube.rule.RAMLRulesDefinition;
 import com.mulesoft.services.tools.sonarqube.sensor.MuleSensor;
+import com.mulesoft.services.tools.sonarqube.sensor.RAMLSensor;
 
 public class MulePlugin implements Plugin {
 
@@ -49,6 +53,10 @@ public class MulePlugin implements Plugin {
 		context.addExtensions(MuleMetrics.class, ConfigurationFilesSensor.class, MuleSizeRating.class,
 				MuleFlowCount.class, MuleSubFlowCount.class, MuleTransformationCount.class, CoverageSensor.class,
 				MUnitSensor.class);
+
+		// ADDED RAML
+		context.addExtensions(RAMLLanguage.class, RAMLRulesDefinition.class, RAMLQualityProfile.class,
+				RAMLSensor.class);
 	}
 
 }

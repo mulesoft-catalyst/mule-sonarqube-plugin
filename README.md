@@ -150,6 +150,7 @@ The plugin handles different types of metrics, such as:
 ### Server
 As the plugin inspects xml files and SonarQube already comes with an XML plugin, you have to modify this behavior so only one plugin inspects xml files. For that reason, you have to remove the xml extension from it.
 To do that you have to, as administrator, go to Administration-> Configuration->General Settings->XML and delete the .xml extension from it.
+
 ![serverconfig](/img/server-conf-1.png)
 #### Plugin
 1. Plugin Generation
@@ -164,10 +165,12 @@ The jar file of the plugin has to be placed in the following folder <server-home
 ### Project
 #### Quality Profile
 By default, the mule 4 quality profile is going to be used. In case you are analyzing a mule 3 you need to change it, to do that, as an administrator, go to the project -> Administration -> Quality Profiles and change the profile for the Mule Language.
+
 ![quality-profiles-conf](/img/quality-profiles-conf.png)
 
 #### Quality Gate
 If you have created a custom Mule Quality Gate, to enforce it on a project, you will have to go to the project -> Administration -> Quality Gates and change the gate previously selected.
+
 ![quality-gate](/img/quality-gate.png)
 
 ## Execution
@@ -202,11 +205,17 @@ For more information, please refer to: https://docs.sonarqube.org/latest/analysi
 
 ### Results
 Once you run the command, you will see the project and the information about it like this:
+
 ***Overview***
+
 ![project-overview](/img/project-overview.png)
+
 ***Issues***
+
 ![project-issues](/img/project-issues.png)
+
 ***Measures***
+
 ![project-measures](/img/project-measures.png)
 
 ### Try it out

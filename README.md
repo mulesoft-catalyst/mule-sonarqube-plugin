@@ -25,6 +25,7 @@ Table of Contents
 A plugin has been created to validate Mule applications code (Configuration Files) using SonarQube. 
 This plugin contains a set of rules and metrics that are going to used and calculated every time a project is being inspected.
 For more information, about SonarQube please refer to: https://www.sonarqube.org/
+
 This is an [UNLICENSED software, please review the considerations](UNLICENSE.md). If you need assistance for extending this, contact MuleSoft Professional Services
 
 ## SonarQube Concepts
@@ -230,3 +231,4 @@ The docker image is based on the official SonarQube Image, *sonarqube:7.7-commun
 
 ## Final Notes
 Enjoy and provide feedback / contribute :)
+

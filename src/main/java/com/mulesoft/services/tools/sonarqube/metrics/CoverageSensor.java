@@ -108,7 +108,11 @@ public class CoverageSensor implements Sensor {
 						}
 					}
 				}
-				String[] fileParts = name.split(File.separator);
+				String[] fileParts;
+				if (name.contains(File.separator))
+					fileParts = name.split(File.separator);
+				else
+					fileParts = new String[] { name };
 				coverageMap.put(fileParts[fileParts.length - 1], counter);
 				if (logger.isDebugEnabled()) {
 					logger.debug("name :" + node.get("name") + " : coverage:" + node.get("coverage"));

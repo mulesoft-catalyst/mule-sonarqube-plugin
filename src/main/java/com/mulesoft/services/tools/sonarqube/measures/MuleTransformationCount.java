@@ -26,11 +26,11 @@ public class MuleTransformationCount implements MeasureComputer {
 		logger.info("Computing Mule Transformation Count");
 
 		if (context.getComponent().getType() != Component.Type.FILE) {
-			int sumFlows = 0;
+			int sumTransformations = 0;
 			for (Measure child : context.getChildrenMeasures(MuleMetrics.TRANSFORMATIONS.key())) {
-				sumFlows += child.getIntValue();
+				sumTransformations += child.getIntValue();
 			}
-			context.addMeasure(MuleMetrics.TRANSFORMATIONS.key(), sumFlows);
+			context.addMeasure(MuleMetrics.TRANSFORMATIONS.key(), sumTransformations);
 
 		}
 

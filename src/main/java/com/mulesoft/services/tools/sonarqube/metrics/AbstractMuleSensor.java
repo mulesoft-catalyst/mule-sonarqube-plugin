@@ -7,6 +7,7 @@ import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
 
 import com.mulesoft.services.tools.sonarqube.filter.MuleFilePredicate;
+import com.mulesoft.services.tools.sonarqube.language.MuleLanguage;
 import com.mulesoft.services.tools.sonarqube.sensor.MuleSensor;
 
 public abstract class AbstractMuleSensor implements Sensor {
@@ -18,7 +19,7 @@ public abstract class AbstractMuleSensor implements Sensor {
 
 		FileSystem fs = context.fileSystem();
 		// Only ConfigurationFiles
-		Iterable<InputFile> files = fs.inputFiles(new MuleFilePredicate());
+		Iterable<InputFile> files = fs.inputFiles(new MuleFilePredicate(new MuleLanguage(context.config()).getFileSuffixes()));
 		for (InputFile file : files) {
 			process(context, file, MuleSensor.getLanguage(context));
 		}

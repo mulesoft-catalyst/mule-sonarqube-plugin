@@ -62,7 +62,7 @@ public class CoverageSensor implements Sensor {
 					MuleProperties.getProperties(MuleSensor.getLanguage(context)), munitJsonReport);
 			FileSystem fs = context.fileSystem();
 			// Only ConfigurationFiles
-			Iterable<InputFile> files = fs.inputFiles(new MuleFilePredicate());
+			Iterable<InputFile> files = fs.inputFiles(new MuleFilePredicate(new MuleLanguage(context.config()).getFileSuffixes()));
 			for (InputFile file : files) {
 				saveCoverage(coverage, file.filename(), context, file);
 			}

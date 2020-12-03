@@ -11,10 +11,18 @@ import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 
 public class MuleFilePredicate implements FilePredicate {
+
 	private final Logger logger = Loggers.get(MuleFilePredicate.class);
 	SAXBuilder saxBuilder = new SAXBuilder();
 	String muleNamespace = "http://www.mulesoft.org/schema/mule/core";
-	String fileExtension = ".xml";
+	String[] fileExtensions;
+	/**
+	 * 
+	 */
+	public MuleFilePredicate(String[] aFileSuffixes) {
+		super();
+		fileExtensions = aFileSuffixes;
+	}
 
 	@Override
 	public boolean apply(InputFile inputFile) {
@@ -22,15 +30,17 @@ public class MuleFilePredicate implements FilePredicate {
 			logger.debug("Executing Mule Sensor on file:" + inputFile.filename());
 		}
 
-		if (inputFile.filename().endsWith(fileExtension)) {
-			try {
-				Document document = saxBuilder.build(inputFile.inputStream());
-
-				String namespace = document.getRootElement().getNamespaceURI();
-				if (muleNamespace.equals(namespace))
-					return true;
-			} catch (JDOMException | IOException e) {
-				logger.error("Parsing document:" + inputFile.filename(), e);
+		for (String fileExtension : fileExtensions) {
+			if (inputFile.filename().endsWith(fileExtension)) {
+				try {
+					Document document = saxBuilder.build(inputFile.inputStream());
+	
+					String namespace = document.getRootElement().getNamespaceURI();
+					if (muleNamespace.equals(namespace))
+						return true;
+				} catch (JDOMException | IOException e) {
+					logger.error("Parsing document:" + inputFile.filename(), e);
+				}
 			}
 		}
 		return false;

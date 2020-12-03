@@ -99,6 +99,8 @@ public class Rule {
     protected String applies;
     @XmlAttribute(name = "type")
     protected String type;
+    @XmlAttribute(name = "locationHint")
+	private String locationHint;
 
     /**
      * Gets the value of the value property.
@@ -268,5 +270,19 @@ public class Rule {
     public void setType(String value) {
         this.type = value;
     }
+
+	/**
+	 * 
+	 */
+	public String getLocationHint() {
+		return locationHint;
+	}
+
+	/**
+	 * @see #locationHint
+	 */
+	public void setLocationHint(String aLocationHint) {
+		locationHint = aLocationHint;
+	}
 
 }

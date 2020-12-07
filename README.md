@@ -230,8 +230,8 @@ Once you run the command, you will see the project and the information about it 
 ### Try it out
 
 ```cmd
-docker pull fperezpa/mulesonarqube:7.7.2
-docker run -d --name sonarqube -p 9000:9000 -p 9092:9092 fperezpa/mulesonarqube:7.7.2
+docker pull fperezpa/mulesonarqube:7.7.3
+docker run -d --name sonarqube -p 9000:9000 -p 9092:9092 fperezpa/mulesonarqube:7.7.3
 ```
 *Disclaimer*
 The docker image is based on the official SonarQube Image, *sonarqube:7.7-community*. For more information please visit, https://hub.docker.com/_/sonarqube/

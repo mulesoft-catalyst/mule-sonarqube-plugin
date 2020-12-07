@@ -11,25 +11,27 @@ import org.jaxen.SimpleFunctionContext;
 import org.jaxen.XPathFunctionContext;
 import org.jaxen.function.StringFunction;
 
-public class MatchesFunction implements Function {
+public class IsConfigurableFunction implements Function {
+
+	private static final String IS_CONFIGURABLE_REGEX = "^\\$\\{.*\\}$";
 
 	public static void registerSelfInSimpleContext() {
 		// see http://jaxen.org/extensions.html
-		((SimpleFunctionContext) XPathFunctionContext.getInstance()).registerFunction(null, "matches",
-				new MatchesFunction());
+		((SimpleFunctionContext) XPathFunctionContext.getInstance()).registerFunction(null, "is-configurable",
+				new IsConfigurableFunction());
 	}
 
 	@Override
 	public Object call(Context context, List args) throws FunctionCallException {
 
-		if (args.size() == 2) {
-			return evaluate(args.get(0), args.get(1), context.getNavigator());
+		if (args.size() == 1) {
+			return evaluate(args.get(0), context.getNavigator());
 		}
 
-		throw new FunctionCallException("matches() requires two arguments.");
+		throw new FunctionCallException("is-configurable() requires two arguments.");
 	}
 
-	public static Boolean evaluate(Object strArg, Object matchArg, Navigator nav) {
+	public static Boolean evaluate(Object strArg, Navigator nav) {
 		if (strArg instanceof List) {
 			@SuppressWarnings("unchecked")
 			List<Object> objectList = (List<Object>) strArg;
@@ -41,7 +43,9 @@ public class MatchesFunction implements Function {
 			for (Iterator<Object> iterator = objectList.iterator(); iterator.hasNext();) {
 				Object object = iterator.next();
 				String str = StringFunction.evaluate(object, nav);
-				String regexp = StringFunction.evaluate(matchArg, nav);
+				String regexp = StringFunction.evaluate(IS_CONFIGURABLE_REGEX, nav);
+				System.out.println("str: " + str);
+				System.out.println("regexp: " + regexp);
 				if (!str.matches(regexp)) {
 					return Boolean.FALSE;
 				}
@@ -49,7 +53,7 @@ public class MatchesFunction implements Function {
 			return Boolean.TRUE;
 		} else {
 			String str = StringFunction.evaluate(strArg, nav);
-			String regexp = StringFunction.evaluate(matchArg, nav);
+			String regexp = StringFunction.evaluate(IS_CONFIGURABLE_REGEX, nav);
 			return (str.matches(regexp) ? Boolean.TRUE : Boolean.FALSE);
 		}
 

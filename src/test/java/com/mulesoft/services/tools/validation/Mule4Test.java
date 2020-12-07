@@ -58,4 +58,14 @@ public class Mule4Test {
 		boolean valid = xpathProcessor.processXPath(rule, rootElement, Boolean.class).booleanValue();
 		assertTrue("HTTP Requestor Configuration should have a configurable Response Timeout", valid);
 	}
+
+	@Test
+	public void testIsConfigurable() throws JDOMException, IOException {
+		String rule = "is-configurable(//mule:mule/secure-properties:config/@key)";
+		String fileName = testDirectory.concat(File.separator + "global.xml");
+		Document document = saxBuilder.build(new File(fileName));
+		Element rootElement = document.getRootElement();
+		boolean valid = xpathProcessor.processXPath(rule, rootElement, Boolean.class).booleanValue();
+		assertTrue("MULE CREDENTIALS MUST BE CONFIGURABLE", valid);
+	}
 }

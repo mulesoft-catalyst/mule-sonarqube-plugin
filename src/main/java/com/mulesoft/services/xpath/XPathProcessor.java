@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mulesoft.services.xpath.jaxen.function.ext.MatchesFunction;
+import com.mulesoft.services.xpath.jaxen.function.ext.IsConfigurableFunction;
 
 public class XPathProcessor {
 	Logger logger = LoggerFactory.getLogger(getClass());
@@ -26,6 +27,7 @@ public class XPathProcessor {
 
 	public XPathProcessor() {
 		MatchesFunction.registerSelfInSimpleContext();
+		IsConfigurableFunction.registerSelfInSimpleContext();
 	}
 
 	public XPathProcessor loadNamespaces(String resourceName) {

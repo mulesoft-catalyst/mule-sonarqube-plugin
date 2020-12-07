@@ -140,7 +140,8 @@
 		</rule>
 		<rule id="10" name="HTTP Listener should use HTTPS protocol"
 			description="HTTP Listener should use HTTPS protocol"
-			severity="MAJOR" type="vulnerability">
+			severity="MAJOR" type="vulnerability"
+			locationHint="//*[local-name()='listener-config']">
 			count(//mule:mule/http:listener-config)=0
 			or
 			//mule:mule/http:listener-config/@protocol='HTTPS'
@@ -148,7 +149,8 @@
 		<rule id="11"
 			name="HTTP Listener should use a specific port property"
 			description="HTTP Listener should use a specific port property"
-			severity="MAJOR" type="code_smell">
+			severity="MAJOR" type="code_smell"
+			locationHint="//*[local-name()='listener-config']">
 			count(//mule:mule/http:listener-config)=0
 			or
 			//mule:mule/http:listener-config/@port='${https.port}' or

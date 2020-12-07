@@ -36,6 +36,7 @@ public class MuleRulesDefinition implements RulesDefinition {
 		String CATEGORY = "category";
 		String SCOPE = "scope";
 		String XPATH = "xpath-expression";
+		String XPATH_LOCATION_HINT = "xpath-location-hint";
 	}
 
 	@Override
@@ -97,8 +98,13 @@ public class MuleRulesDefinition implements RulesDefinition {
 				.setType(RuleParamType.STRING);
 		x1Rule.createParam(PARAMS.XPATH).setDescription(prop.getProperty("rule.template.parameter.xpath"))
 				.setType(RuleParamType.STRING);
+		x1Rule.createParam(PARAMS.XPATH_LOCATION_HINT).setDescription(prop.getProperty("rule.template.parameter.xpathlocationhint"))
+		.setType(RuleParamType.STRING);
 		x1Rule.createParam(PARAMS.SCOPE).setDescription(prop.getProperty("rule.template.parameter.scope"))
 				.setType(RuleParamType.STRING);
+
+		logger.info("addRuleTemplate x1Rule="+x1Rule);
+
 	}
 
 	private void addRule(NewRepository repository, Ruleset ruleset,
@@ -113,6 +119,8 @@ public class MuleRulesDefinition implements RulesDefinition {
 		x1Rule.addTags(language);
 		x1Rule.createParam(PARAMS.CATEGORY).setDefaultValue(ruleset.getCategory()).setType(RuleParamType.STRING);
 		x1Rule.createParam(PARAMS.XPATH).setDefaultValue(rule.getValue()).setType(RuleParamType.STRING);
+		logger.info("LocationHint="+rule.getLocationHint()+" for "+rule.getName());
+		x1Rule.createParam(PARAMS.XPATH_LOCATION_HINT).setDefaultValue(rule.getLocationHint()).setType(RuleParamType.STRING);
 		if (rule.getApplies() != null) {
 			x1Rule.createParam(PARAMS.SCOPE).setDefaultValue(rule.getApplies()).setType(RuleParamType.STRING);
 		}

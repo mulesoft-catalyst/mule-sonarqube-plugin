@@ -37,7 +37,7 @@ public class ApplicationStrategyScope implements ScopeStrategy {
 			String ruleId = rule.ruleKey().toString();
 			boolean valid = xpathValidator.processXPath(rule.param(MuleRulesDefinition.PARAMS.XPATH).trim(),
 					rootElement, Boolean.class).booleanValue();
-			logger.info("Validation Result: " + valid + " : File: " + t.filename() + " :Rule:" + rule.ruleKey());
+			logger.info("Validation Result: " + valid + " : File: " + t.filename() + " :Rule:" + rule.ruleKey()+" internalKey="+rule.internalKey());
 			if (!valid && !valids.contains(ruleId) && !issues.containsKey(rule.ruleKey())) {
 				NewIssue newIssue = context.newIssue().forRule(rule.ruleKey());
 				NewIssueLocation primaryLocation = newIssue.newLocation().on(t);

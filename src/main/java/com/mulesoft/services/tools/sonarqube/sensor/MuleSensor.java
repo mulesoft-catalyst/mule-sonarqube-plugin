@@ -49,7 +49,7 @@ public class MuleSensor implements Sensor {
 
 		FilePredicates p = fs.predicates();
 		Map<RuleKey, List<NewIssue>> issues = new HashMap<RuleKey, List<NewIssue>>();
-		fs.inputFiles(p.and(p.hasLanguage(MuleLanguage.LANGUAGE_KEY), new MuleFilePredicate()))
+		fs.inputFiles(p.and(p.hasLanguage(MuleLanguage.LANGUAGE_KEY), new MuleFilePredicate(new MuleLanguage(context.config()).getFileSuffixes())))
 				.forEach(new SonarRuleConsumer(getLanguage(context), context, issues));
 
 		// Iterate and save all the issues

@@ -111,6 +111,8 @@ public class CoverageSensor implements Sensor {
 				String[] fileParts;
 				if (name.contains(File.separator))
 					fileParts = name.split(File.separator);
+				else if (name.contains("/") && "\\".equals(File.separator))
+					fileParts = name.split("/");
 				else
 					fileParts = new String[] { name };
 				coverageMap.put(fileParts[fileParts.length - 1], counter);

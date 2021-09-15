@@ -97,7 +97,7 @@
 		</rule>
 		<rule id="7" name="HTTP Listener should use HTTPS protocol"
 			description="HTTP Listener should use HTTPS protocol"
-			severity="MAJOR" type="vulnerability"
+			severity="MINOR" type="vulnerability"
 			locationHint="//*[local-name()='listener-config']">
 			count(//mule:mule/http:listener-config)=0
 			or

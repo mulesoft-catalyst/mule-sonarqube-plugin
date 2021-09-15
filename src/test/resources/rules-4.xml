@@ -106,7 +106,7 @@
 		<rule id="8"
 			name="HTTP Listener should use a specific port property"
 			description="HTTP Listener should use a specific port property"
-			severity="MAJOR" type="code_smell"
+			severity="MINOR" type="code_smell"
 			locationHint="//*[local-name()='listener-config']">
 			count(//mule:mule/http:listener-config)=0
 			or

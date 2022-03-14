@@ -168,7 +168,7 @@ To do that you have to, as administrator, go to Administration-> Configuration->
     - Build the mule plugin for Mule rules running `mvn clean package sonar-packaging:sonar-plugin -Dlanguage=mule`.
     - Copy the generated file, mule-validation-sonarqube-plugin-{version}-mule.jar to *sonar-home*/extensions/plugins
 
-2. Copy rules [Mule 3 Rules](https://github.com/mulesoft-consulting/mule-sonarqube-plugin/blob/master/src/test/resources/rules-3.xml) or [Mule 4 Rules](https://github.com/mulesoft-consulting/mule-sonarqube-plugin/blob/master/src/test/resources/rules-4.xml) to *sonar-home*/extensions/plugins
+2. Copy rules [Mule 3 Rules](https://github.com/mulesoft-consulting/mule-sonarqube-plugin/blob/master/src/test/resources/rules-3.xml) and [Mule 4 Rules](https://github.com/mulesoft-consulting/mule-sonarqube-plugin/blob/master/src/test/resources/rules-4.xml) to *sonar-home*/extensions/plugins
 The jar file of the plugin has to be placed in the following folder <server-home>/extensions/plugins/
 
 ### Project

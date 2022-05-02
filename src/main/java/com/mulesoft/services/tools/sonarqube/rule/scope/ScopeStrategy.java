@@ -15,6 +15,7 @@ public interface ScopeStrategy {
 
 	String FILE = "file";
 	String APPLICATION = "application";
+	String NODE = "node";
 
 	public void validate(XPathProcessor xpathValidator, Map<RuleKey, List<NewIssue>> issues, SensorContext context, InputFile t, ActiveRule rule);
 }

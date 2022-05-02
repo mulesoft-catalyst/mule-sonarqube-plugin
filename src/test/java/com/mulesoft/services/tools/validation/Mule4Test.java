@@ -5,14 +5,15 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
 
+import com.mulesoft.services.tools.sonarqube.rule.scope.SonarXmlCheckHelper;
+import com.mulesoft.services.xpath.XPathProcessor;
+
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
 import org.jdom2.input.SAXBuilder;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.mulesoft.services.xpath.XPathProcessor;
 
 public class Mule4Test {
 	Validator val = null;
@@ -21,6 +22,8 @@ public class Mule4Test {
 	SAXBuilder saxBuilder = new SAXBuilder();
 	String testDirectory = null;
 
+	SonarXmlCheckHelper tempSonarXmlCheckHelper = new SonarXmlCheckHelper();
+	
 	@Before
 	public void setUp() {
 		val = new Validator(Constants.Ruleset.MULE4);

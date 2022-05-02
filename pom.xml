@@ -5,7 +5,7 @@
 
 	<groupId>com.mulesoft.services</groupId>
 	<artifactId>mule-validation-sonarqube-plugin</artifactId>
-	<version>1.0.6</version>
+	<version>1.1.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<url>http://maven.apache.org</url>
@@ -27,6 +27,12 @@
 			<artifactId>junit</artifactId>
 			<version>4.13.1</version>
 		</dependency>
+		<!-- <dependency>
+			<groupId>org.hamcrest</groupId>
+			<artifactId>hamcrest</artifactId>
+			<version>2.2</version>
+			<scope>test</scope>
+		</dependency> -->
 		<dependency>
 			<groupId>org.sonarsource.sonarqube</groupId>
 			<artifactId>sonar-plugin-api</artifactId>
@@ -36,6 +42,20 @@
 			<!-- mandatory scope -->
 			<scope>provided</scope>
 		</dependency>
+		<!-- Try to bring in the fix for https://github.com/SonarSource/sonar-analyzer-commons/issues/127 -->
+		<!-- <dependency>
+			<groupId>org.sonarsource.analyzer-commons</groupId>
+			<artifactId>sonar-xml-parsing</artifactId>
+			<version>1.13.0.662</version>
+			<type>pom</type>
+		</dependency> -->
+		<!-- For sonar-plugin-api >= 8.0-->
+		<!-- <groupId>org.sonarsource.sonarqube</groupId>
+		<dependency>
+			<artifactId>sonar-plugin-api-impl</artifactId>
+			<version>${sonar.apiVersion}</version>
+			<scope>test</scope>
+		</dependency> -->
 		<dependency>
 			<groupId>org.sonarsource.analyzer-commons</groupId>
 			 <artifactId>sonar-xml-parsing</artifactId>

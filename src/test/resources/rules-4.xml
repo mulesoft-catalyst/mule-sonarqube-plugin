@@ -17,14 +17,14 @@
 		<rule id="1"
 			name="Configuration files should not have so many flows"
 			description="Configuration files should not have so many flows"
-			severity="MAJOR" type="code_smell">
-			not(count(//mule:mule/mule:flow)>=10)
+			severity="MINOR" type="code_smell">
+			not(count(//mule:mule/mule:flow)>=45)
 		</rule>
 		<rule id="2"
 			name="Configuration files should not have so many subflows"
 			description="Configuration files should not have so many subflows"
-			severity="MAJOR" type="code_smell">
-			not(count(//mule:mule/mule:sub-flow)>=5)
+			severity="MINOR" type="code_smell">
+			not(count(//mule:mule/mule:sub-flow)>=45)
 		</rule>
 		<rule id="3" name="Flows names should match a naming convention"
 			description="Flows names should match a naming convention"
@@ -97,7 +97,7 @@
 		</rule>
 		<rule id="7" name="HTTP Listener should use HTTPS protocol"
 			description="HTTP Listener should use HTTPS protocol"
-			severity="MAJOR" type="vulnerability"
+			severity="MINOR" type="vulnerability"
 			locationHint="//*[local-name()='listener-config']">
 			count(//mule:mule/http:listener-config)=0
 			or
@@ -106,7 +106,7 @@
 		<rule id="8"
 			name="HTTP Listener should use a specific port property"
 			description="HTTP Listener should use a specific port property"
-			severity="MAJOR" type="code_smell"
+			severity="MINOR" type="code_smell"
 			locationHint="//*[local-name()='listener-config']">
 			count(//mule:mule/http:listener-config)=0
 			or

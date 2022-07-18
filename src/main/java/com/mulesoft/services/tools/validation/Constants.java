@@ -11,6 +11,7 @@ public interface Constants {
 	interface Applicability {
 		public String FILE = "file";
 		public String APPLICATION = "application";
+		public String NODE = "node";
 	}
 
 	interface Severity {

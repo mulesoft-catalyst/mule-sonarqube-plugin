@@ -22,6 +22,7 @@ import com.mulesoft.services.tools.sonarqube.language.MuleLanguage;
 import com.mulesoft.services.tools.sonarqube.properties.MuleProperties;
 import com.mulesoft.services.tools.sonarqube.rule.MuleRulesDefinition;
 import com.mulesoft.services.tools.sonarqube.rule.scope.ScopeFactory;
+import com.mulesoft.services.tools.sonarqube.rule.scope.ScopeStrategy;
 import com.mulesoft.services.xpath.XPathProcessor;
 
 /**
@@ -40,6 +41,7 @@ public class SonarRuleConsumer implements Consumer<InputFile> {
 	List<String> filteredCategories = new ArrayList<String>();
 
 	private static final String FILTER_RULESET_PROPERTY = "sonar.property.ruleset.categories";
+	private ScopeStrategy strategy;
 
 	public SonarRuleConsumer(String language, SensorContext context, Map<RuleKey, List<NewIssue>> issues) {
 		this.language = language;
@@ -72,8 +74,11 @@ public class SonarRuleConsumer implements Consumer<InputFile> {
 				logger.debug("Validating rule:" + rule.internalKey());
 			}
 			String appliesTo = rule.param(MuleRulesDefinition.PARAMS.SCOPE);
+			String pluginVersion = rule.param(MuleRulesDefinition.PARAMS.PLUGIN_VERSION).trim();
 
-			ScopeFactory.getInstance().getStrategy(appliesTo).validate(xpathProcessor, issues, context, t, rule);
+			strategy = ScopeFactory.getInstance().getStrategy(appliesTo, pluginVersion);
+			logger.info(String.format("rule=%s, appliesTo=%s, pluginVersion=%s, strategy=%s", rule.ruleKey(), appliesTo, pluginVersion, strategy.getClass().getName()));
+			strategy.validate(xpathProcessor, issues, context, t, rule);
 		}
 	}
 

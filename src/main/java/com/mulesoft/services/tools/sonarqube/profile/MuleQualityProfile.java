@@ -43,6 +43,7 @@ public class MuleQualityProfile implements BuiltInQualityProfilesDefinition {
 				MuleLanguage.LANGUAGE_KEY);
 		profile4.setDefault(true);
 		activeRule(profile4, MuleRulesDefinition.MULE4_REPOSITORY_KEY, "file:extensions/plugins/rules-4.xml");
+		activeRule(profile4, MuleRulesDefinition.MULE4_REPOSITORY_KEY, "file:extensions/plugins/rules-4-custom.xml");
 		profile4.done();
 	}
 

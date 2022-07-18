@@ -54,6 +54,8 @@ public class Ruleset {
     protected List<Rule> rule;
     @XmlAttribute(name = "category", required = true)
     protected String category;
+    @XmlAttribute(name = "pluginVersion")
+	private String pluginVersion;
 
     /**
      * Gets the value of the rule property.
@@ -108,4 +110,18 @@ public class Ruleset {
         this.category = value;
     }
 
+        /**
+	 * 
+	 */
+	public String getPluginVersion() {
+		return pluginVersion;
+	}
+
+	/**
+	 * @see #pluginVersion
+	 */
+	public void setPluginVersion(String aPluginVersion) {
+		pluginVersion = aPluginVersion;
+	}
+    
 }

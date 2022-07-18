@@ -101,6 +101,8 @@ public class Rule {
     protected String type;
     @XmlAttribute(name = "locationHint")
 	private String locationHint;
+    @XmlAttribute(name = "pluginVersion")
+	private String pluginVersion;
 
     /**
      * Gets the value of the value property.
@@ -283,6 +285,20 @@ public class Rule {
 	 */
 	public void setLocationHint(String aLocationHint) {
 		locationHint = aLocationHint;
+	}
+
+    /**
+	 * 
+	 */
+	public String getPluginVersion() {
+		return pluginVersion;
+	}
+
+	/**
+	 * @see #pluginVersion
+	 */
+	public void setPluginVersion(String aPluginVersion) {
+		pluginVersion = aPluginVersion;
 	}
 
 }

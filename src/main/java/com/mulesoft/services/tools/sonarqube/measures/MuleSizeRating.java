@@ -29,7 +29,10 @@ public class MuleSizeRating implements MeasureComputer {
 
 	@Override
 	public void compute(MeasureComputerContext context) {
-		logger.info("Computing MuleSizeRating");
+		if (logger.isDebugEnabled()) {
+			logger.debug("Computing MuleSizeRating");
+
+		}
 		Measure flows = context.getMeasure(MuleMetrics.FLOWS.key());
 		Measure subflows = context.getMeasure(MuleMetrics.SUBFLOWS.key());
 		int totalNumberOfFlows = 0;

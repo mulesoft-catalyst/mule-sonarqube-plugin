@@ -23,7 +23,9 @@ public class MuleTransformationCount implements MeasureComputer {
 
 	@Override
 	public void compute(MeasureComputerContext context) {
-		logger.info("Computing Mule Transformation Count");
+		if (logger.isDebugEnabled()) {
+			logger.debug("Computing Mule Transformation Count");
+		}
 
 		if (context.getComponent().getType() != Component.Type.FILE) {
 			int sumTransformations = 0;

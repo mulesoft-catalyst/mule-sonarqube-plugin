@@ -24,7 +24,9 @@ public class MuleFlowCount implements MeasureComputer {
 
 	@Override
 	public void compute(MeasureComputerContext context) {
-		logger.info("Computing Mule Flow Size");
+		if (logger.isDebugEnabled()) {
+			logger.debug("Computing Mule Flow Size");
+		}
 
 		if (context.getComponent().getType() != Component.Type.FILE) {
 			int sumFlows = 0;

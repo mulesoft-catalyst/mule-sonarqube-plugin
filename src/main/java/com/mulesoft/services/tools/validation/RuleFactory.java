@@ -2,7 +2,6 @@ package com.mulesoft.services.tools.validation;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.file.NoSuchFileException;
 
 import javax.xml.bind.JAXBContext;
@@ -16,7 +15,7 @@ import com.mulesoft.services.tools.validation.rules.Rulestore;
 
 /**
  * Rulestore factory class
- * 
+ *
  * @type Factory
  * @author franco.parma
  *
@@ -35,7 +34,7 @@ public class RuleFactory {
 	public static Rulestore loadRulesFromXml(String spec) throws JAXBException, IOException {
 		Rulestore rulestore = null;
 
-		try (InputStream stream = new URL(spec).openConnection().getInputStream()) {
+		try (InputStream stream = RuleFactory.class.getResourceAsStream(spec)) {
 			if (stream == null) {
 				throw new NoSuchFileException("Resource file not found");
 			}

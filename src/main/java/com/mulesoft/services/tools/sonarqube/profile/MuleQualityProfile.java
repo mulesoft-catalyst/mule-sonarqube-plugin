@@ -18,7 +18,7 @@ import com.mulesoft.services.tools.validation.rules.Rulestore;
 
 /**
  * Mule Quality Profile
- * 
+ *
  * @author franco.perez
  *
  */
@@ -35,14 +35,14 @@ public class MuleQualityProfile implements BuiltInQualityProfilesDefinition {
 		NewBuiltInQualityProfile profile3 = context.createBuiltInQualityProfile("MuleSoft Rules for Mule 3.x",
 				MuleLanguage.LANGUAGE_KEY);
 		// profile3.setDefault(true);
-		activeRule(profile3, MuleRulesDefinition.MULE3_REPOSITORY_KEY, "file:extensions/plugins/rules-3.xml");
+		activeRule(profile3, MuleRulesDefinition.MULE3_REPOSITORY_KEY, "/rules-3.xml");
 		profile3.done();
 
 		// Mule4
 		NewBuiltInQualityProfile profile4 = context.createBuiltInQualityProfile("MuleSoft Rules for Mule 4.x",
 				MuleLanguage.LANGUAGE_KEY);
 		profile4.setDefault(true);
-		activeRule(profile4, MuleRulesDefinition.MULE4_REPOSITORY_KEY, "file:extensions/plugins/rules-4.xml");
+		activeRule(profile4, MuleRulesDefinition.MULE4_REPOSITORY_KEY, "/rules-4.xml");
 		profile4.done();
 	}
 

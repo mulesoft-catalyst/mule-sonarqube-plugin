@@ -46,10 +46,8 @@ public class MuleRulesDefinition implements RulesDefinition {
 
 		logger.info("Working Directory = {}", System.getProperty("user.dir"));
 
-		createRepository(context, MULE3_REPOSITORY_KEY, MuleLanguage.LANGUAGE_KEY, "Mule3 Analyzer",
-				"file:extensions/plugins/rules-3.xml");
-		createRepository(context, MULE4_REPOSITORY_KEY, MuleLanguage.LANGUAGE_KEY, "Mule4 Analyzer",
-				"file:extensions/plugins/rules-4.xml");
+		createRepository(context, MULE3_REPOSITORY_KEY, MuleLanguage.LANGUAGE_KEY, "Mule3 Analyzer", "/rules-3.xml");
+		createRepository(context, MULE4_REPOSITORY_KEY, MuleLanguage.LANGUAGE_KEY, "Mule4 Analyzer", "/rules-4.xml");
 
 	}
 

@@ -51,6 +51,10 @@ public class XPathProcessor {
 		@SuppressWarnings("rawtypes")
 		XPathExpression xp = xpfac.compile(xpathExpression, Filters.fpassthrough(), Collections.emptyMap(), namespace);
 
+		if (logger.isDebugEnabled()) {
+			logger.debug("Evaluating Result:" + xp.evaluateFirst(target));
+		}
+
 		return (T) xp.evaluateFirst(target);
 	}
 

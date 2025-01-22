@@ -218,5 +218,13 @@
 			or not(matches(@responseTimeout,'^\$\{.*\}$'))]) = 0
 		</rule>
 	</ruleset>
+	<ruleset category="project-naming">
+                <rule id="1"
+                       name="Mule project name must end with -api, -sapi, -eapi, or -papi"
+                       description="Ensure that the project name follows the naming convention by ending with -api, -sapi, -eapi, or -papi."
+                       severity="MAJOR" applies="project" type="code_smell">
+                       matches(/mule:mule-artifact/project, ".*(-api|-sapi|-eapi|-papi)$")
+                </rule>
+        </ruleset>
 </rulestore>
 

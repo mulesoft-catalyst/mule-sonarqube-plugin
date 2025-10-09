@@ -1,6 +1,5 @@
 package com.mulesoft.services.xpath;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,7 +35,7 @@ public class XPathProcessor {
 			namespacesProperties
 					.forEach((Object t, Object u) -> namespace.add(Namespace.getNamespace(t.toString(), u.toString())));
 
-		} catch (IOException e) {
+		} catch (Throwable e) {
 			logger.error(e.getMessage(), e);
 		}
 		return this;

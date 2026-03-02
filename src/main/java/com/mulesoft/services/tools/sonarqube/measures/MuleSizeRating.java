@@ -1,5 +1,6 @@
 package com.mulesoft.services.tools.sonarqube.measures;
 
+import org.sonar.api.ce.measure.Component;
 import org.sonar.api.ce.measure.Measure;
 import org.sonar.api.ce.measure.MeasureComputer;
 import org.sonar.api.utils.log.Logger;
@@ -29,8 +30,13 @@ public class MuleSizeRating implements MeasureComputer {
 
 	@Override
 	public void compute(MeasureComputerContext context) {
-		logger.info("Computing MuleSizeRating");
-		Measure flows = context.getMeasure(MuleMetrics.FLOWS.key());
+		if (context.getComponent().getType() == Component.Type.FILE) {
+			return;
+		}
+
+        logger.debug("Computing MuleSizeRating");
+
+        Measure flows = context.getMeasure(MuleMetrics.FLOWS.key());
 		Measure subflows = context.getMeasure(MuleMetrics.SUBFLOWS.key());
 		int totalNumberOfFlows = 0;
 		if (flows != null) {
@@ -40,7 +46,6 @@ public class MuleSizeRating implements MeasureComputer {
 			totalNumberOfFlows += subflows.getIntValue();
 		}
 
-		// rating values are currently implemented as integers in API
 		int rating = RATING_A;
 		if (totalNumberOfFlows > THRESHOLD_SIMPLE) {
 			rating = RATING_B;

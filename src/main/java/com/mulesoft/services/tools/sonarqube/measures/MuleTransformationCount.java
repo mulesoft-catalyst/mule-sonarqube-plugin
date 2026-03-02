@@ -1,5 +1,7 @@
 package com.mulesoft.services.tools.sonarqube.measures;
 
+import java.util.Iterator;
+
 import org.sonar.api.ce.measure.Component;
 import org.sonar.api.ce.measure.Measure;
 import org.sonar.api.ce.measure.MeasureComputer;
@@ -23,17 +25,17 @@ public class MuleTransformationCount implements MeasureComputer {
 
 	@Override
 	public void compute(MeasureComputerContext context) {
-		logger.info("Computing Mule Transformation Count");
-
-		if (context.getComponent().getType() != Component.Type.FILE) {
-			int sumTransformations = 0;
-			for (Measure child : context.getChildrenMeasures(MuleMetrics.TRANSFORMATIONS.key())) {
-				sumTransformations += child.getIntValue();
-			}
-			context.addMeasure(MuleMetrics.TRANSFORMATIONS.key(), sumTransformations);
-
+		if (context.getComponent().getType() == Component.Type.FILE) {
+			return;
 		}
 
+        logger.debug("Computing Mule Transformation Count");
+
+        int sumTransformations = 0;
+        for (Measure child : context.getChildrenMeasures(MuleMetrics.TRANSFORMATIONS.key())) {
+            sumTransformations += child.getIntValue();
+        }
+        context.addMeasure(MuleMetrics.TRANSFORMATIONS.key(), sumTransformations);
 	}
 
 }

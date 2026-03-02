@@ -1,5 +1,7 @@
 package com.mulesoft.services.tools.sonarqube.measures;
 
+import java.util.Iterator;
+
 import org.sonar.api.ce.measure.Component;
 import org.sonar.api.ce.measure.Measure;
 import org.sonar.api.ce.measure.MeasureComputer;
@@ -24,16 +26,17 @@ public class MuleFlowCount implements MeasureComputer {
 
 	@Override
 	public void compute(MeasureComputerContext context) {
-		logger.info("Computing Mule Flow Size");
-
-		if (context.getComponent().getType() != Component.Type.FILE) {
-			int sumFlows = 0;
-			for (Measure child : context.getChildrenMeasures(MuleMetrics.FLOWS.key())) {
-				sumFlows += child.getIntValue();
-			}
-			context.addMeasure(MuleMetrics.FLOWS.key(), sumFlows);
-
+		if (context.getComponent().getType() == Component.Type.FILE) {
+			return;
 		}
+
+		logger.debug("Computing Mule Flow Size");
+
+        int sumFlows = 0;
+        for (Measure child : context.getChildrenMeasures(MuleMetrics.FLOWS.key())) {
+            sumFlows += child.getIntValue();
+        }
+        context.addMeasure(MuleMetrics.FLOWS.key(), sumFlows);
 	}
 
 }

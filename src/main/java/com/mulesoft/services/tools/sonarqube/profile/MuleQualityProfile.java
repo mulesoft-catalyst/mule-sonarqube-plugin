@@ -35,20 +35,32 @@ public class MuleQualityProfile implements BuiltInQualityProfilesDefinition {
 		NewBuiltInQualityProfile profile3 = context.createBuiltInQualityProfile("MuleSoft Rules for Mule 3.x",
 				MuleLanguage.LANGUAGE_KEY);
 		// profile3.setDefault(true);
-		activeRule(profile3, MuleRulesDefinition.MULE3_REPOSITORY_KEY, "file:extensions/plugins/rules-3.xml");
+		activeRule(profile3, MuleRulesDefinition.MULE3_REPOSITORY_KEY, "file:extensions/plugins/rules-3.xml",
+				"classpath:rules-3.xml");
 		profile3.done();
 
 		// Mule4
 		NewBuiltInQualityProfile profile4 = context.createBuiltInQualityProfile("MuleSoft Rules for Mule 4.x",
 				MuleLanguage.LANGUAGE_KEY);
 		profile4.setDefault(true);
-		activeRule(profile4, MuleRulesDefinition.MULE4_REPOSITORY_KEY, "file:extensions/plugins/rules-4.xml");
+		activeRule(profile4, MuleRulesDefinition.MULE4_REPOSITORY_KEY, "file:extensions/plugins/rules-4.xml",
+				"classpath:rules-4.xml");
+		activeRule(profile4, MuleRulesDefinition.MULE4_REPOSITORY_KEY, "file:extensions/plugins/rules-4-custom.xml",
+				"classpath:rules-4-custom.xml");
 		profile4.done();
 	}
 
-	private void activeRule(NewBuiltInQualityProfile profile, String repositoryKey, String ruleFilename) {
+	private void activeRule(NewBuiltInQualityProfile profile, String repositoryKey, String primaryRulesSpec,
+			String fallbackRulesSpec) {
 		try {
-			Rulestore rules = RuleFactory.loadRulesFromXml(ruleFilename);
+			Rulestore rules;
+			try {
+				rules = RuleFactory.loadRulesFromXml(primaryRulesSpec);
+			} catch (IOException | JAXBException primaryFailure) {
+				logger.warn("Failed to load rules from {}. Falling back to {}.", primaryRulesSpec, fallbackRulesSpec,
+						primaryFailure);
+				rules = RuleFactory.loadRulesFromXml(fallbackRulesSpec);
+			}
 			List<Ruleset> rulesetList = rules.getRuleset();
 
 			for (Iterator<Ruleset> iterator = rulesetList.iterator(); iterator.hasNext();) {

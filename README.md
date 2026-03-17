@@ -28,6 +28,10 @@ For more information, about SonarQube please refer to: https://www.sonarqube.org
 
 This is an [UNLICENSED software, please review the considerations](UNLICENSE.md). If you need assistance for extending this, contact MuleSoft Professional Services
 
+**Minimum SonarQube version**: 7.7 (this plugin is built against `sonar-plugin-api` 7.7).
+
+**Security**: XML parsing is hardened against XXE (external entities/DTDs are blocked). The optional namespace extension property `sonar.mule.namespace.properties` supports only local specs (`classpath:` / `file:` / filesystem path); `http(s)` is not allowed.
+
 ## SonarQube Concepts
 ### Issues
 Is the way to identify and classify different aspects or exceptions of the code.
@@ -157,8 +161,9 @@ The plugin handles different types of metrics, such as:
 
 ## Configuration
 ### Server
-As the plugin inspects xml files and SonarQube already comes with an XML plugin, you have to modify this behavior so only one plugin inspects xml files. For that reason, you have to remove the xml extension from it.
-To do that you have to, as administrator, go to Administration-> Configuration->General Settings->XML and delete the .xml extension from it.
+This plugin scans Mule configuration XML files by detecting Mule's core namespace (`http://www.mulesoft.org/schema/mule/core`) and by the configurable suffix list `sonar.mule.scan.file.suffixes` (default: `.xml`).
+
+You **do not need** to remove `.xml` from the built-in XML language settings. If you want to avoid XML analyzer rules running on Mule configuration files, prefer using exclusions on the XML analyzer or project exclusions instead of removing `.xml` globally.
 
 ![serverconfig](/img/server-conf-1.png)
 #### Plugin
@@ -168,7 +173,12 @@ To do that you have to, as administrator, go to Administration-> Configuration->
     - Build the mule plugin for Mule rules running `mvn clean package sonar-packaging:sonar-plugin -Dlanguage=mule`.
     - Copy the generated file, mule-validation-sonarqube-plugin-{version}-mule.jar to *sonar-home*/extensions/plugins
 
-2. Copy rules [Mule 3 Rules](https://github.com/mulesoft-consulting/mule-sonarqube-plugin/blob/master/src/test/resources/rules-3.xml) and [Mule 4 Rules](https://github.com/mulesoft-consulting/mule-sonarqube-plugin/blob/master/src/test/resources/rules-4.xml) to *sonar-home*/extensions/plugins
+2. Rules files
+    - Rules are **embedded inside the plugin JAR** by default.
+    - Optional override: to customize rules without rebuilding the plugin, place `rules-3.xml` / `rules-4.xml` (and optionally `rules-4-custom.xml`) in `*sonar-home*/extensions/plugins/` (the plugin will use those if present).
+    - Rules support versioning via `pluginVersion`:
+      - `pluginVersion="1.0"` (default): legacy JDOM2 evaluation
+      - `pluginVersion="1.1"`: `javax.xml` XPath evaluation with **node-scope** rules (multiple issues per file + precise locations)
 The jar file of the plugin has to be placed in the following folder <server-home>/extensions/plugins/
 
 ### Project

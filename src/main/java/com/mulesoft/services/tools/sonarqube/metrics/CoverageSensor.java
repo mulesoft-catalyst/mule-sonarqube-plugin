@@ -62,9 +62,32 @@ public class CoverageSensor implements Sensor {
 					MuleProperties.getProperties(MuleSensor.getLanguage(context)), munitJsonReport);
 			FileSystem fs = context.fileSystem();
 			// Only ConfigurationFiles
-			Iterable<InputFile> files = fs.inputFiles(new MuleFilePredicate(new MuleLanguage(context.config()).getFileSuffixes()));
+			String[] scanSuffixes = context.config().getStringArray(MuleLanguage.SCAN_FILE_SUFFIXES_KEY);
+			if (scanSuffixes.length == 0) {
+				scanSuffixes = MuleLanguage.SCAN_FILE_SUFFIXES_DEFAULT_VALUE.split(",");
+			}
+			Iterable<InputFile> files = fs.inputFiles(new MuleFilePredicate(scanSuffixes));
 			for (InputFile file : files) {
 				saveCoverage(coverage, file.filename(), context, file);
+			}
+		} else {
+			// Treat missing coverage report as 0% coverage so Quality Gates can fail.
+			FileSystem fs = context.fileSystem();
+			String[] scanSuffixes = context.config().getStringArray(MuleLanguage.SCAN_FILE_SUFFIXES_KEY);
+			if (scanSuffixes.length == 0) {
+				scanSuffixes = MuleLanguage.SCAN_FILE_SUFFIXES_DEFAULT_VALUE.split(",");
+			}
+			Iterable<InputFile> files = fs.inputFiles(new MuleFilePredicate(scanSuffixes));
+			for (InputFile file : files) {
+				int lines = file.lines();
+				if (lines <= 0) {
+					continue;
+				}
+				NewCoverage newCoverage = context.newCoverage().onFile(file);
+				for (int i = 1; i <= lines; i++) {
+					newCoverage.lineHits(i, 0);
+				}
+				newCoverage.save();
 			}
 		}
 	}
@@ -108,14 +131,12 @@ public class CoverageSensor implements Sensor {
 						}
 					}
 				}
-				String[] fileParts;
-				if (name.contains(File.separator))
-					fileParts = name.split(File.separator);
-				else if (name.contains("/") && "\\".equals(File.separator))
-					fileParts = name.split("/");
-				else
-					fileParts = new String[] { name };
-				coverageMap.put(fileParts[fileParts.length - 1], counter);
+				String normalizedName = name.replace("\\", "/");
+				String[] fileParts = normalizedName.split("/");
+				String baseName = fileParts[fileParts.length - 1];
+				// Store multiple keys to improve matching across environments and report formats.
+				coverageMap.put(baseName, counter);
+				coverageMap.put(normalizedName, counter);
 				if (logger.isDebugEnabled()) {
 					logger.debug("name :" + node.get("name") + " : coverage:" + node.get("coverage"));
 				}
@@ -131,6 +152,9 @@ public class CoverageSensor implements Sensor {
 			InputFile file) {
 
 		FlowCoverageCounter coverage = coverageMap.get(fileName);
+		if (coverage == null) {
+			coverage = coverageMap.get(file.relativePath().replace("\\", "/"));
+		}
 		if (coverage != null) {
 			NewCoverage newCoverage = context.newCoverage().onFile(file);
 

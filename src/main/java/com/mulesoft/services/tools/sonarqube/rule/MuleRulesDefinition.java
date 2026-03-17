@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
+import java.util.Arrays;
 
 import javax.xml.bind.JAXBException;
 
@@ -37,6 +38,7 @@ public class MuleRulesDefinition implements RulesDefinition {
 		String SCOPE = "scope";
 		String XPATH = "xpath-expression";
 		String XPATH_LOCATION_HINT = "xpath-location-hint";
+		String PLUGIN_VERSION = "plugin-version";
 	}
 
 	@Override
@@ -47,30 +49,40 @@ public class MuleRulesDefinition implements RulesDefinition {
 		logger.info("Working Directory = {}", System.getProperty("user.dir"));
 
 		createRepository(context, MULE3_REPOSITORY_KEY, MuleLanguage.LANGUAGE_KEY, "Mule3 Analyzer",
-				"file:extensions/plugins/rules-3.xml");
+				Arrays.asList("file:extensions/plugins/rules-3.xml"),
+				Arrays.asList("classpath:rules-3.xml"));
 		createRepository(context, MULE4_REPOSITORY_KEY, MuleLanguage.LANGUAGE_KEY, "Mule4 Analyzer",
-				"file:extensions/plugins/rules-4.xml");
+				Arrays.asList("file:extensions/plugins/rules-4.xml", "file:extensions/plugins/rules-4-custom.xml"),
+				Arrays.asList("classpath:rules-4.xml", "classpath:rules-4-custom.xml"));
 
 	}
 
 	private void createRepository(Context context, String repositoryKey, String language, String repositoryName,
-			String ruleFilename) {
+			List<String> primaryRulesSpecs, List<String> fallbackRulesSpecs) {
 		NewRepository repository = context.createRepository(repositoryKey, language).setName(repositoryName);
 		try {
-			Rulestore rulestore = RuleFactory.loadRulesFromXml(ruleFilename);
-			List<Ruleset> rulesetList = rulestore.getRuleset();
-
-			for (Iterator<Ruleset> iterator = rulesetList.iterator(); iterator.hasNext();) {
-				Ruleset ruleset = iterator.next();
-				logger.debug("Rule Category :  " + ruleset.getCategory());
-				List<com.mulesoft.services.tools.validation.rules.Rule> ruleList = ruleset.getRule();
-				for (Iterator<com.mulesoft.services.tools.validation.rules.Rule> ruleIterator = ruleList
-						.iterator(); ruleIterator.hasNext();) {
-					com.mulesoft.services.tools.validation.rules.Rule rule = ruleIterator.next();
-					logger.debug("Rule Id :  " + rule.getId());
-					addRule(repository, ruleset, rule, language);
+			for (int i = 0; i < primaryRulesSpecs.size(); i++) {
+				String primaryRulesSpec = primaryRulesSpecs.get(i);
+				String fallbackRulesSpec = (fallbackRulesSpecs != null && fallbackRulesSpecs.size() > i)
+						? fallbackRulesSpecs.get(i)
+						: null;
+				Rulestore rulestore = loadRules(primaryRulesSpec, fallbackRulesSpec);
+				if (rulestore == null) {
+					continue;
 				}
 
+				List<Ruleset> rulesetList = rulestore.getRuleset();
+				for (Iterator<Ruleset> iterator = rulesetList.iterator(); iterator.hasNext();) {
+					Ruleset ruleset = iterator.next();
+					logger.debug("Rule Category :  " + ruleset.getCategory());
+					List<com.mulesoft.services.tools.validation.rules.Rule> ruleList = ruleset.getRule();
+					for (Iterator<com.mulesoft.services.tools.validation.rules.Rule> ruleIterator = ruleList
+							.iterator(); ruleIterator.hasNext();) {
+						com.mulesoft.services.tools.validation.rules.Rule rule = ruleIterator.next();
+						logger.debug("Rule Id :  " + rule.getId());
+						addRule(repository, ruleset, rule, language);
+					}
+				}
 			}
 
 		} catch (JAXBException | IOException e) {
@@ -83,6 +95,20 @@ public class MuleRulesDefinition implements RulesDefinition {
 		// don't forget to call done() to finalize the definition
 		repository.done();
 
+	}
+
+	private Rulestore loadRules(String primaryRulesSpec, String fallbackRulesSpec) throws JAXBException, IOException {
+		try {
+			return RuleFactory.loadRulesFromXml(primaryRulesSpec);
+		} catch (IOException | JAXBException primaryFailure) {
+			if (fallbackRulesSpec == null) {
+				logger.warn("Failed to load rules from {} and no fallback configured.", primaryRulesSpec, primaryFailure);
+				return null;
+			}
+			logger.warn("Failed to load rules from {}. Falling back to {}.", primaryRulesSpec, fallbackRulesSpec,
+					primaryFailure);
+			return RuleFactory.loadRulesFromXml(fallbackRulesSpec);
+		}
 	}
 
 	private void addRuleTemplate(NewRepository repository, String language) {
@@ -102,6 +128,8 @@ public class MuleRulesDefinition implements RulesDefinition {
 		.setType(RuleParamType.STRING);
 		x1Rule.createParam(PARAMS.SCOPE).setDescription(prop.getProperty("rule.template.parameter.scope"))
 				.setType(RuleParamType.STRING);
+		x1Rule.createParam(PARAMS.PLUGIN_VERSION).setDescription(prop.getProperty("rule.template.parameter.pluginversion"))
+				.setType(RuleParamType.STRING);
 
 		logger.info("addRuleTemplate x1Rule="+x1Rule);
 
@@ -119,11 +147,20 @@ public class MuleRulesDefinition implements RulesDefinition {
 		x1Rule.addTags(language);
 		x1Rule.createParam(PARAMS.CATEGORY).setDefaultValue(ruleset.getCategory()).setType(RuleParamType.STRING);
 		x1Rule.createParam(PARAMS.XPATH).setDefaultValue(rule.getValue()).setType(RuleParamType.STRING);
-		logger.info("LocationHint="+rule.getLocationHint()+" for "+rule.getName());
-		x1Rule.createParam(PARAMS.XPATH_LOCATION_HINT).setDefaultValue(rule.getLocationHint()).setType(RuleParamType.STRING);
+		String locationHint = rule.getLocationHint() == null ? "" : rule.getLocationHint();
+		logger.debug("LocationHint={} for {}", locationHint, rule.getName());
+		x1Rule.createParam(PARAMS.XPATH_LOCATION_HINT).setDefaultValue(locationHint).setType(RuleParamType.STRING);
 		if (rule.getApplies() != null) {
 			x1Rule.createParam(PARAMS.SCOPE).setDefaultValue(rule.getApplies()).setType(RuleParamType.STRING);
 		}
+		String pluginVersion = rule.getPluginVersion();
+		if (pluginVersion == null || pluginVersion.isEmpty()) {
+			pluginVersion = ruleset.getPluginVersion();
+		}
+		if (pluginVersion == null || pluginVersion.isEmpty()) {
+			pluginVersion = "1.0";
+		}
+		x1Rule.createParam(PARAMS.PLUGIN_VERSION).setDefaultValue(pluginVersion).setType(RuleParamType.STRING);
 
 	}
 

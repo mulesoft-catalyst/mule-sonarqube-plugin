@@ -17,12 +17,13 @@ import org.sonar.api.utils.log.Loggers;
 
 import com.mulesoft.services.tools.sonarqube.language.MuleLanguage;
 import com.mulesoft.services.tools.sonarqube.properties.MuleProperties;
+import com.mulesoft.services.tools.sonarqube.xml.SecureSaxBuilder;
 import com.mulesoft.services.xpath.XPathProcessor;
 
 public class ConfigurationFilesSensor extends AbstractMuleSensor {
 
 	private final Logger logger = Loggers.get(ConfigurationFilesSensor.class);
-	SAXBuilder saxBuilder = new SAXBuilder();
+	SAXBuilder saxBuilder = SecureSaxBuilder.create();
 
 	private static final String METRIC_FLOW_PROPERTY = "mule.metric.flow";
 	private static final String METRIC_SUBFLOW_PROPERTY = "mule.metric.subflow";

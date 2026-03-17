@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.jdom2.input.SAXBuilder;
-import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
@@ -34,7 +33,6 @@ public class MuleSensor implements Sensor {
 
 	@Override
 	public void describe(SensorDescriptor descriptor) {
-		descriptor.onlyOnLanguage(MuleLanguage.LANGUAGE_KEY);
 		descriptor.createIssuesForRuleRepositories(MuleRulesDefinition.MULE3_REPOSITORY_KEY,
 				MuleRulesDefinition.MULE4_REPOSITORY_KEY);
 	}
@@ -47,9 +45,12 @@ public class MuleSensor implements Sensor {
 
 		FileSystem fs = context.fileSystem();
 
-		FilePredicates p = fs.predicates();
 		Map<RuleKey, List<NewIssue>> issues = new HashMap<RuleKey, List<NewIssue>>();
-		fs.inputFiles(p.and(p.hasLanguage(MuleLanguage.LANGUAGE_KEY), new MuleFilePredicate(new MuleLanguage(context.config()).getFileSuffixes())))
+		String[] scanSuffixes = context.config().getStringArray(MuleLanguage.SCAN_FILE_SUFFIXES_KEY);
+		if (scanSuffixes.length == 0) {
+			scanSuffixes = MuleLanguage.SCAN_FILE_SUFFIXES_DEFAULT_VALUE.split(",");
+		}
+		fs.inputFiles(new MuleFilePredicate(scanSuffixes))
 				.forEach(new SonarRuleConsumer(getLanguage(context), context, issues));
 
 		// Iterate and save all the issues

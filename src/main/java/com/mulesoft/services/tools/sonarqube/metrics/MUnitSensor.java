@@ -17,6 +17,7 @@ import org.sonar.api.utils.log.Loggers;
 
 import com.mulesoft.services.tools.sonarqube.language.MuleLanguage;
 import com.mulesoft.services.tools.sonarqube.properties.MuleProperties;
+import com.mulesoft.services.tools.sonarqube.xml.SecureSaxBuilder;
 import com.mulesoft.services.xpath.XPathProcessor;
 
 /**
@@ -31,7 +32,7 @@ public class MUnitSensor extends AbstractMuleSensor {
 
 	private final Logger logger = Loggers.get(MUnitSensor.class);
 
-	SAXBuilder saxBuilder = new SAXBuilder();
+	SAXBuilder saxBuilder = SecureSaxBuilder.create();
 
 	private static final String METRIC_UNIT_TESTS_PROPERTY = "mule.metric.test";
 

@@ -19,7 +19,11 @@ public abstract class AbstractMuleSensor implements Sensor {
 
 		FileSystem fs = context.fileSystem();
 		// Only ConfigurationFiles
-		Iterable<InputFile> files = fs.inputFiles(new MuleFilePredicate(new MuleLanguage(context.config()).getFileSuffixes()));
+		String[] scanSuffixes = context.config().getStringArray(MuleLanguage.SCAN_FILE_SUFFIXES_KEY);
+		if (scanSuffixes.length == 0) {
+			scanSuffixes = MuleLanguage.SCAN_FILE_SUFFIXES_DEFAULT_VALUE.split(",");
+		}
+		Iterable<InputFile> files = fs.inputFiles(new MuleFilePredicate(scanSuffixes));
 		for (InputFile file : files) {
 			process(context, file, MuleSensor.getLanguage(context));
 		}

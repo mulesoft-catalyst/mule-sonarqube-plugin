@@ -40,6 +40,7 @@ public class SonarRuleConsumer implements Consumer<InputFile> {
 	List<String> filteredCategories = new ArrayList<String>();
 
 	private static final String FILTER_RULESET_PROPERTY = "sonar.property.ruleset.categories";
+	private static final String EXTRA_NAMESPACES_SPEC_KEY = "sonar.mule.namespace.properties";
 
 	public SonarRuleConsumer(String language, SensorContext context, Map<RuleKey, List<NewIssue>> issues) {
 		this.language = language;
@@ -47,6 +48,8 @@ public class SonarRuleConsumer implements Consumer<InputFile> {
 		this.issues = issues;
 		xpathProcessor = new XPathProcessor().loadNamespaces(
 				language.equals(MuleLanguage.LANGUAGE_MULE4_KEY) ? "namespace-4.properties" : "namespace-3.properties");
+
+		this.context.config().get(EXTRA_NAMESPACES_SPEC_KEY).ifPresent(xpathProcessor::loadNamespacesSpec);
 
 		String categories = (String) MuleProperties.getProperties(MuleLanguage.LANGUAGE_KEY)
 				.get(FILTER_RULESET_PROPERTY);
@@ -72,9 +75,17 @@ public class SonarRuleConsumer implements Consumer<InputFile> {
 				logger.debug("Validating rule:" + rule.internalKey());
 			}
 			String appliesTo = rule.param(MuleRulesDefinition.PARAMS.SCOPE);
-
-			ScopeFactory.getInstance().getStrategy(appliesTo).validate(xpathProcessor, issues, context, t, rule);
+			String pluginVersion = safeTrim(rule.param(MuleRulesDefinition.PARAMS.PLUGIN_VERSION));
+			if (pluginVersion.isEmpty()) {
+				pluginVersion = "1.0";
+			}
+			ScopeFactory.getInstance().getStrategy(appliesTo, pluginVersion).validate(xpathProcessor, issues, context, t,
+					rule);
 		}
+	}
+
+	private static String safeTrim(String s) {
+		return s == null ? "" : s.trim();
 	}
 
 	private Iterator<ActiveRule> rulesIterator(Collection<ActiveRule> activeRules) {

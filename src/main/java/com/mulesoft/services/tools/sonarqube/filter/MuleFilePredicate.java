@@ -10,10 +10,12 @@ import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 
+import com.mulesoft.services.tools.sonarqube.xml.SecureSaxBuilder;
+
 public class MuleFilePredicate implements FilePredicate {
 
 	private final Logger logger = Loggers.get(MuleFilePredicate.class);
-	SAXBuilder saxBuilder = new SAXBuilder();
+	SAXBuilder saxBuilder = SecureSaxBuilder.create();
 	String muleNamespace = "http://www.mulesoft.org/schema/mule/core";
 	String[] fileExtensions;
 	/**
@@ -21,7 +23,21 @@ public class MuleFilePredicate implements FilePredicate {
 	 */
 	public MuleFilePredicate(String[] aFileSuffixes) {
 		super();
-		fileExtensions = aFileSuffixes;
+		if (aFileSuffixes == null || aFileSuffixes.length == 0) {
+			fileExtensions = new String[] { ".xml" };
+		} else {
+			java.util.List<String> cleaned = new java.util.ArrayList<>();
+			for (String s : aFileSuffixes) {
+				if (s == null) {
+					continue;
+				}
+				String t = s.trim();
+				if (!t.isEmpty()) {
+					cleaned.add(t);
+				}
+			}
+			fileExtensions = cleaned.isEmpty() ? new String[] { ".xml" } : cleaned.toArray(new String[0]);
+		}
 	}
 
 	@Override

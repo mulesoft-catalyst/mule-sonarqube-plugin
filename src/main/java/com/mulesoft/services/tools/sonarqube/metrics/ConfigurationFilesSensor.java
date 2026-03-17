@@ -11,7 +11,6 @@ import org.sonar.api.batch.measure.Metric;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
 import org.sonar.api.batch.sensor.measure.NewMeasure;
-import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 
@@ -49,9 +48,6 @@ public class ConfigurationFilesSensor extends AbstractMuleSensor {
 
 			saveMetric(xpathProcessor, MuleMetrics.SUBFLOWS, context, file, rootElement,
 					MuleProperties.getProperties(language).get(METRIC_SUBFLOW_PROPERTY).toString());
-
-			// Lines of code = Lines in Mule
-			saveMetric(file.lines(), CoreMetrics.NCLOC, context, file);
 
 			saveMetric(xpathProcessor, MuleMetrics.TRANSFORMATIONS, context, file, rootElement,
 					MuleProperties.getProperties(language).get(METRIC_DW_PAYLOAD_PROPERTY).toString(),

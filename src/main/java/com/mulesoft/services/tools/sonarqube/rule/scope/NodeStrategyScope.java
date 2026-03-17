@@ -52,7 +52,10 @@ public class NodeStrategyScope implements ScopeStrategy {
 					primaryLocation = primaryLocation.at(t.newRange(textRange.getStartLine(), textRange.getStartColumn(),
 							textRange.getEndLine(), textRange.getEndColumn()));
 				} else if (t.lines() > 0) {
-					primaryLocation = primaryLocation.at(t.newRange(1, 0, 1, 0));
+					org.sonar.api.batch.fs.TextRange range = IssueLocations.primaryRange(t);
+					if (range != null) {
+						primaryLocation = primaryLocation.at(range);
+					}
 				}
 				newIssue.at(primaryLocation);
 				addIssue(issues, rule, newIssue);

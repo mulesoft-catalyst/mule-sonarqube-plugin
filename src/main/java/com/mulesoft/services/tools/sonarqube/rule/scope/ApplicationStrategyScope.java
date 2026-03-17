@@ -59,7 +59,10 @@ public class ApplicationStrategyScope implements ScopeStrategy {
 				NewIssue newIssue = context.newIssue().forRule(rule.ruleKey());
 				NewIssueLocation primaryLocation = newIssue.newLocation().on(t);
 				if (t.lines() > 0) {
-					primaryLocation = primaryLocation.at(t.newRange(1, 0, 1, 0));
+					org.sonar.api.batch.fs.TextRange range = IssueLocations.primaryRange(t);
+					if (range != null) {
+						primaryLocation = primaryLocation.at(range);
+					}
 				}
 				newIssue.at(primaryLocation);
 				addIssue(issues, rule, newIssue);

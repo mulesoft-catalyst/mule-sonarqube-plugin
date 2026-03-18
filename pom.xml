@@ -6,7 +6,7 @@
 	<groupId>com.mulesoft.services</groupId>
 	<artifactId>mule-validation-sonarqube-plugin</artifactId>
 	<version>1.1.0</version>
-	<packaging>jar</packaging>
+	<packaging>sonar-plugin</packaging>
 
 	<url>https://github.com/mulesoft-catalyst/mule-sonarqube-plugin</url>
 	<description>Sonar Plugin for Mule Projects</description>
@@ -50,11 +50,6 @@
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
 			<version>1.7.25</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.logging.log4j</groupId>
-			<artifactId>log4j-slf4j-impl</artifactId>
-			<version>2.17.2</version>
 		</dependency>
 		<dependency>
 			<groupId>jaxen</groupId>

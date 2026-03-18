@@ -25,9 +25,31 @@ import org.w3c.dom.NodeList;
 import com.mulesoft.services.tools.sonarqube.rule.MuleRulesDefinition;
 import com.mulesoft.services.xpath.XPathProcessor;
 
+/**
+ * Applies rules that are scoped to individual XML nodes.
+ *
+ * <p>Node-scoped rules return a node set for their XPath expression. An issue is created for each
+ * matched node and anchored as precisely as possible (element name or attribute value) using
+ * {@link XmlFile} location metadata.
+ *
+ * <p>This scope is only supported for rules with {@code plugin-version=1.1}.
+ *
+ * @version 1.1.0
+ * @since 1.1.0
+ */
 public class NodeStrategyScope implements ScopeStrategy {
 	private final Logger logger = Loggers.get(NodeStrategyScope.class);
 
+	/**
+	 * Evaluates the rule XPath as a node set and records an issue for each returned node.
+	 *
+	 * @param xpathValidator XPath processor configured with namespaces
+	 * @param issues mutable issue collection keyed by rule
+	 * @param context active SonarQube sensor context
+	 * @param t the file being validated
+	 * @param rule the active rule being applied
+	 * @throws IllegalArgumentException when the rule is not marked as {@code plugin-version=1.1}
+	 */
 	@Override
 	public void validate(XPathProcessor xpathValidator, Map<RuleKey, List<NewIssue>> issues, SensorContext context,
 			InputFile t, ActiveRule rule) {
@@ -65,6 +87,12 @@ public class NodeStrategyScope implements ScopeStrategy {
 		}
 	}
 
+	/**
+	 * Converts a W3C DOM node into a Sonar XML text range (when supported).
+	 *
+	 * @param node DOM node returned by XPath evaluation
+	 * @return a text range for anchoring an issue, or null when the node type is not supported
+	 */
 	private static XmlTextRange toTextRange(Node node) {
 		if (node instanceof org.w3c.dom.Element) {
 			return XmlFile.nameLocation((org.w3c.dom.Element) node);
@@ -75,10 +103,23 @@ public class NodeStrategyScope implements ScopeStrategy {
 		return null;
 	}
 
+	/**
+	 * Trims the input string, returning an empty string when the value is null.
+	 *
+	 * @param s the input string, may be null
+	 * @return the trimmed string, or {@code ""} when {@code s} is null
+	 */
 	private static String safeTrim(String s) {
 		return s == null ? "" : s.trim();
 	}
 
+	/**
+	 * Adds the issue to the per-rule issue map.
+	 *
+	 * @param issues issue map to update
+	 * @param rule the rule key under which the issue should be stored
+	 * @param issue the issue to add
+	 */
 	private void addIssue(Map<RuleKey, List<NewIssue>> issues, ActiveRule rule, NewIssue issue) {
 		if (issues.containsKey(rule.ruleKey())) {
 			issues.get(rule.ruleKey()).add(issue);

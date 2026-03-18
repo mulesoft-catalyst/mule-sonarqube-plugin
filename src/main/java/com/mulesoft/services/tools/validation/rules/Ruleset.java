@@ -19,6 +19,13 @@ import javax.xml.bind.annotation.XmlType;
 
 
 /**
+ * JAXB model for a ruleset grouping within a Mule rules XML file.
+ *
+ * <p>A ruleset groups multiple {@link Rule} entries under a shared category and may define a
+ * default {@code pluginVersion} that individual rules can inherit.
+ *
+ * @version 1.1.0
+ * @since 1.1.0
  * <p>Java class for anonymous complex type.
  * 
  * <p>The following schema fragment specifies the expected content contained within this class.
@@ -111,14 +118,18 @@ public class Ruleset {
     }
 
     /**
+	 * Returns the default plugin version for this ruleset (used when a rule does not define its own).
 	 *
+	 * @return plugin version string, or null when not provided
 	 */
 	public String getPluginVersion() {
 		return pluginVersion;
 	}
 
 	/**
-	 * @see #pluginVersion
+	 * Sets the default plugin version for this ruleset.
+	 *
+	 * @param aPluginVersion plugin version string; may be null
 	 */
 	public void setPluginVersion(String aPluginVersion) {
 		pluginVersion = aPluginVersion;

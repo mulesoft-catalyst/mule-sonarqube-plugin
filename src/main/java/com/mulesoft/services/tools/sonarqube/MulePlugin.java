@@ -20,6 +20,25 @@ import com.mulesoft.services.tools.sonarqube.rule.MuleRulesDefinition;
 import com.mulesoft.services.tools.sonarqube.sensor.MuleSensor;
 import com.mulesoft.services.tools.sonarqube.xml.SecureJaxp;
 
+/**
+ * SonarQube plugin entry point that wires Mule analysis into the Sonar runtime.
+ *
+ * <p>This class registers:
+ * <ul>
+ *   <li>the Mule language definition and sensor</li>
+ *   <li>rule definitions and the default quality profile</li>
+ *   <li>custom measures/metrics and sensors (coverage, MUnit, etc.)</li>
+ *   <li>plugin configuration properties (file suffixes, namespace properties)</li>
+ * </ul>
+ *
+ * <p>It also hardens XML processing via {@link SecureJaxp} to reduce exposure to XXE and
+ * related XML parser attacks during analysis.
+ *
+ * @version 1.1.0
+ * @since 1.1.0
+ * @see MuleLanguage
+ * @see MuleSensor
+ */
 public class MulePlugin implements Plugin {
 
 	// public static final String LANGUAGE_NAME = "Mule";
@@ -27,6 +46,11 @@ public class MulePlugin implements Plugin {
 
 	Logger logger = LoggerFactory.getLogger(getClass());
 
+	/**
+	 * Registers all plugin extensions and configuration properties with SonarQube.
+	 *
+	 * @param context plugin context provided by SonarQube for extension registration
+	 */
 	@Override
 	public void define(Context context) {
 		if (logger.isDebugEnabled())

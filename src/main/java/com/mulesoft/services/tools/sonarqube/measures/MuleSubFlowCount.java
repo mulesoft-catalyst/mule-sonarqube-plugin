@@ -9,19 +9,36 @@ import org.sonar.api.utils.log.Loggers;
 import com.mulesoft.services.tools.sonarqube.metrics.MuleMetrics;
 
 /**
- * Computes the total number of Subflows
- * @author franco.perez
+ * Aggregates the {@link MuleMetrics#SUBFLOWS} metric across components.
  *
+ * <p>{@link com.mulesoft.services.tools.sonarqube.metrics.ConfigurationFilesSensor} records subflow counts at the
+ * file level. This {@link MeasureComputer} sums child measures to compute the total number of subflows for
+ * higher-level components (directories/modules/project).
+ *
+ * @author franco.perez
+ * @version 1.1.0
+ * @since 1.1.0
  */
 public class MuleSubFlowCount implements MeasureComputer {
 
 	private final Logger logger = Loggers.get(this.getClass());
 
+	/**
+	 * Declares that this measure computer outputs the {@code mule_subflows} metric.
+	 *
+	 * @param defContext definition context provided by SonarQube CE
+	 * @return a measure computer definition
+	 */
 	@Override
 	public MeasureComputerDefinition define(MeasureComputerDefinitionContext defContext) {
 		return defContext.newDefinitionBuilder().setOutputMetrics(MuleMetrics.SUBFLOWS.key()).build();
 	}
 
+	/**
+	 * Sums all child file measures to compute the aggregated subflow count.
+	 *
+	 * @param context compute context providing access to component type and child measures
+	 */
 	@Override
 	public void compute(MeasureComputerContext context) {
 		if(logger.isDebugEnabled()) {

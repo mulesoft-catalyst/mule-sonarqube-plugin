@@ -19,6 +19,13 @@ import javax.xml.bind.annotation.XmlType;
 
 
 /**
+ * JAXB model for the root element of a Mule rules XML file.
+ *
+ * <p>A rule store contains one or more {@link Ruleset}s and a {@code type} attribute (typically
+ * {@code mule3} or {@code mule4}) indicating which Mule runtime/version the rules apply to.
+ *
+ * @version 1.1.0
+ * @since 1.1.0
  * <p>Java class for anonymous complex type.
  * 
  * <p>The following schema fragment specifies the expected content contained within this class.

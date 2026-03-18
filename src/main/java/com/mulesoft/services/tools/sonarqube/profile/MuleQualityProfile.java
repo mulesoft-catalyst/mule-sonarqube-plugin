@@ -17,15 +17,25 @@ import com.mulesoft.services.tools.validation.rules.Ruleset;
 import com.mulesoft.services.tools.validation.rules.Rulestore;
 
 /**
- * Mule Quality Profile
- * 
- * @author franco.perez
+ * Registers built-in quality profiles for Mule projects.
  *
+ * <p>The plugin provides separate profiles for Mule 3.x and Mule 4.x by activating all rules
+ * defined in the corresponding rule repositories. Mule 4 is set as the default profile.
+ *
+ * @author franco.perez
+ * @version 1.1.0
+ * @since 1.1.0
+ * @see MuleRulesDefinition
  */
 public class MuleQualityProfile implements BuiltInQualityProfilesDefinition {
 
 	Logger logger = LoggerFactory.getLogger(getClass());
 
+	/**
+	 * Defines the built-in quality profiles and activates rules within them.
+	 *
+	 * @param context SonarQube quality profiles definition context
+	 */
 	@Override
 	public void define(Context context) {
 		if (logger.isDebugEnabled())
@@ -50,6 +60,17 @@ public class MuleQualityProfile implements BuiltInQualityProfilesDefinition {
 		profile4.done();
 	}
 
+	/**
+	 * Activates every rule contained in the provided rule store into the given profile.
+	 *
+	 * <p>The method tries to load rules from a file-based spec first and falls back to a classpath
+	 * resource when the primary spec cannot be loaded.
+	 *
+	 * @param profile the profile to activate rules in
+	 * @param repositoryKey the SonarQube repository key owning the rules
+	 * @param primaryRulesSpec primary rule store spec (typically {@code file:...})
+	 * @param fallbackRulesSpec fallback rule store spec (typically {@code classpath:...})
+	 */
 	private void activeRule(NewBuiltInQualityProfile profile, String repositoryKey, String primaryRulesSpec,
 			String fallbackRulesSpec) {
 		try {

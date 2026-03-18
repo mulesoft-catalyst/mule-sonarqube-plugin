@@ -11,14 +11,35 @@ import org.jaxen.SimpleFunctionContext;
 import org.jaxen.XPathFunctionContext;
 import org.jaxen.function.StringFunction;
 
+/**
+ * Jaxen extension function {@code matches()} for JDOM-based XPath evaluation.
+ *
+ * <p>This function mirrors the semantics used by legacy rules: it checks whether the input string
+ * (or each string in a node set) fully matches the provided regex.
+ *
+ * @version 1.1.0
+ * @since 1.1.0
+ * @see com.mulesoft.services.xpath.XPathProcessor
+ */
 public class MatchesFunction implements Function {
 
+	/**
+	 * Registers this function in Jaxen's global {@link SimpleFunctionContext}.
+	 */
 	public static void registerSelfInSimpleContext() {
 		// see http://jaxen.org/extensions.html
 		((SimpleFunctionContext) XPathFunctionContext.getInstance()).registerFunction(null, "matches",
 				new MatchesFunction());
 	}
 
+	/**
+	 * Dispatches evaluation based on argument count.
+	 *
+	 * @param context current XPath context
+	 * @param args function arguments
+	 * @return boolean result
+	 * @throws FunctionCallException when argument count is invalid
+	 */
 	@Override
 	public Object call(Context context, List args) throws FunctionCallException {
 
@@ -29,6 +50,14 @@ public class MatchesFunction implements Function {
 		throw new FunctionCallException("matches() requires two arguments.");
 	}
 
+	/**
+	 * Evaluates whether the provided string (or each string within a node set) matches the regex.
+	 *
+	 * @param strArg string or node set argument
+	 * @param matchArg regex argument
+	 * @param nav navigator used to extract string values
+	 * @return {@link Boolean#TRUE} when all evaluated strings match; otherwise {@link Boolean#FALSE}
+	 */
 	public static Boolean evaluate(Object strArg, Object matchArg, Navigator nav) {
 		if (strArg instanceof List) {
 			@SuppressWarnings("unchecked")

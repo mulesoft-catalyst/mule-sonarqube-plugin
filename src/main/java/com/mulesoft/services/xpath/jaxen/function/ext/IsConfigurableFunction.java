@@ -11,16 +11,37 @@ import org.jaxen.SimpleFunctionContext;
 import org.jaxen.XPathFunctionContext;
 import org.jaxen.function.StringFunction;
 
+/**
+ * Jaxen extension function {@code is-configurable()} for JDOM-based XPath evaluation.
+ *
+ * <p>This function detects Mule property placeholders such as {@code ${some.property}}. It returns
+ * true when the input string (or every string within a node set) matches the placeholder regex.
+ *
+ * @version 1.1.0
+ * @since 1.1.0
+ * @see com.mulesoft.services.xpath.XPathProcessor
+ */
 public class IsConfigurableFunction implements Function {
 
 	private static final String IS_CONFIGURABLE_REGEX = "^\\$\\{.*\\}$";
 
+	/**
+	 * Registers this function in Jaxen's global {@link SimpleFunctionContext}.
+	 */
 	public static void registerSelfInSimpleContext() {
 		// see http://jaxen.org/extensions.html
 		((SimpleFunctionContext) XPathFunctionContext.getInstance()).registerFunction(null, "is-configurable",
 				new IsConfigurableFunction());
 	}
 
+	/**
+	 * Dispatches evaluation based on argument count.
+	 *
+	 * @param context current XPath context
+	 * @param args function arguments
+	 * @return boolean result
+	 * @throws FunctionCallException when argument count is invalid
+	 */
 	@Override
 	public Object call(Context context, List args) throws FunctionCallException {
 
@@ -31,6 +52,13 @@ public class IsConfigurableFunction implements Function {
 		throw new FunctionCallException("is-configurable() requires two arguments.");
 	}
 
+	/**
+	 * Evaluates whether the provided string (or each string within a node set) is a placeholder.
+	 *
+	 * @param strArg string or node set argument
+	 * @param nav navigator used to extract string values
+	 * @return {@link Boolean#TRUE} when all evaluated strings match; otherwise {@link Boolean#FALSE}
+	 */
 	public static Boolean evaluate(Object strArg, Navigator nav) {
 		if (strArg instanceof List) {
 			@SuppressWarnings("unchecked")

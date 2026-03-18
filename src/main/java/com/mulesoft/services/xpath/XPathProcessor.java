@@ -29,6 +29,24 @@ import com.mulesoft.services.xpath.javax.util.MappedNamespaceContext;
 import com.mulesoft.services.xpath.jaxen.function.ext.MatchesFunction;
 import com.mulesoft.services.xpath.jaxen.function.ext.IsConfigurableFunction;
 
+/**
+ * Evaluates XPath expressions against Mule XML using either JDOM (Jaxen) or JAXP (W3C DOM).
+ *
+ * <p>This class centralizes namespace handling and custom XPath functions used by Mule validation
+ * rules. It supports two evaluation paths:
+ * <ul>
+ *   <li><b>JDOM/Jaxen</b> via {@link #processXPath(String, Content, Class)} (used by legacy strategies)</li>
+ *   <li><b>JAXP</b> via {@link #processXPathAsNodeSet(String, Node, QName)} (used by plugin version {@code 1.1})</li>
+ * </ul>
+ *
+ * <p>Namespaces are loaded from properties files (for example {@code namespace-3.properties}) and can
+ * be extended by users via {@link #loadNamespacesSpec(String)}. To reduce SSRF risk, namespace extension
+ * specs only allow local file/classpath sources.
+ *
+ * @version 1.1.0
+ * @since 1.1.0
+ * @see com.mulesoft.services.tools.sonarqube.sensor.SonarRuleConsumer
+ */
 public class XPathProcessor {
 	Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -41,11 +59,20 @@ public class XPathProcessor {
 
 	private List<Namespace> namespace = new ArrayList<Namespace>();
 
+	/**
+	 * Creates a processor and registers custom XPath extension functions for Jaxen evaluation.
+	 */
 	public XPathProcessor() {
 		MatchesFunction.registerSelfInSimpleContext();
 		IsConfigurableFunction.registerSelfInSimpleContext();
 	}
 
+	/**
+	 * Loads namespace mappings from a classpath resource and makes them available for XPath evaluation.
+	 *
+	 * @param resourceName classpath resource name (for example {@code "namespace-4.properties"})
+	 * @return this processor for chaining
+	 */
 	public XPathProcessor loadNamespaces(String resourceName) {
 		try (InputStream stream = XPathProcessor.class.getClassLoader().getResourceAsStream(resourceName)) {
 			if (stream == null) {
@@ -60,6 +87,19 @@ public class XPathProcessor {
 		return this;
 	}
 
+	/**
+	 * Loads additional namespace mappings from a spec.
+	 *
+	 * <p>Supported formats:
+	 * <ul>
+	 *   <li>{@code classpath:...}</li>
+	 *   <li>{@code file:...}</li>
+	 *   <li>plain filesystem path</li>
+	 * </ul>
+	 *
+	 * @param spec location of a properties file containing namespace mappings (prefix=namespaceURI)
+	 * @return this processor for chaining
+	 */
 	public XPathProcessor loadNamespacesSpec(String spec) {
 		if (spec == null || spec.trim().isEmpty()) {
 			return this;
@@ -73,6 +113,13 @@ public class XPathProcessor {
 		}
 	}
 
+	/**
+	 * Loads namespaces from the given properties stream.
+	 *
+	 * @param stream input stream to read properties from
+	 * @return this processor for chaining
+	 * @throws IOException when the stream cannot be read
+	 */
 	private XPathProcessor loadNamespaces(InputStream stream) throws IOException {
 		Properties p = new Properties();
 		p.load(stream);
@@ -85,6 +132,15 @@ public class XPathProcessor {
 		return this;
 	}
 
+	/**
+	 * Opens an input stream for a namespace properties spec.
+	 *
+	 * <p>Remote URL schemes are explicitly disallowed to prevent SSRF during analysis.
+	 *
+	 * @param spec spec string (classpath/file/path)
+	 * @return an input stream
+	 * @throws IOException when the resource cannot be opened or the scheme is not allowed
+	 */
 	private static InputStream openSpec(String spec) throws IOException {
 		if (spec.startsWith(CLASSPATH_PREFIX)) {
 			String resourceName = spec.substring(CLASSPATH_PREFIX.length());
@@ -108,6 +164,22 @@ public class XPathProcessor {
 	}
 
 	@SuppressWarnings("unchecked")
+	/**
+	 * Evaluates an XPath expression against a JDOM target using Jaxen.
+	 *
+	 * <p>Supported return types:
+	 * <ul>
+	 *   <li>{@link Boolean}</li>
+	 *   <li>{@link Double} / {@link Number}</li>
+	 *   <li>{@link String}</li>
+	 * </ul>
+	 *
+	 * @param xpathExpression XPath expression to evaluate
+	 * @param target JDOM target node/content
+	 * @param type desired result type
+	 * @param <T> result type
+	 * @return the evaluated value (may be null for non-numeric parses)
+	 */
 	public <T> T processXPath(String xpathExpression, Content target, Class<T> type) {
 		if (logger.isDebugEnabled()) {
 			logger.debug("Evaluating:" + xpathExpression);
@@ -148,10 +220,27 @@ public class XPathProcessor {
 		return (T) xp.evaluateFirst(target);
 	}
 
+	/**
+	 * Returns an immutable mapping of loaded namespace prefixes to namespace URIs.
+	 *
+	 * @return prefix-to-namespace map
+	 */
 	public Map<String, String> getNamespacesByPrefix() {
 		return Collections.unmodifiableMap(namespacesByPrefix);
 	}
 
+	/**
+	 * Evaluates an XPath expression against a W3C DOM target using JAXP.
+	 *
+	 * <p>This path supports custom functions via {@link SonarFunctionResolver} and uses the
+	 * loaded namespace mappings.
+	 *
+	 * @param xpathExpression XPath expression to compile and evaluate
+	 * @param target W3C DOM node to evaluate against (typically the document root)
+	 * @param returnType desired JAXP return type (for example {@link XPathConstants#NODESET})
+	 * @return the evaluated result as per {@code returnType}
+	 * @throws XPathExpressionException when compilation or evaluation fails
+	 */
 	public Object processXPathAsNodeSet(String xpathExpression, Node target, QName returnType)
 			throws XPathExpressionException {
 		if (logger.isDebugEnabled()) {

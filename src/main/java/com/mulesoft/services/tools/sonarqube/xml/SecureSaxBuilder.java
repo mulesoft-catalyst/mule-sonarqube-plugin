@@ -8,6 +8,10 @@ import org.slf4j.LoggerFactory;
  * Creates a hardened SAXBuilder to prevent XXE / external entity processing.
  *
  * This is critical because the plugin parses project XML files which may be untrusted in PR analyses.
+ *
+ * @version 1.1.0
+ * @since 1.1.0
+ * @see SecureJaxp
  */
 public final class SecureSaxBuilder {
 	private static final Logger logger = LoggerFactory.getLogger(SecureSaxBuilder.class);
@@ -16,6 +20,14 @@ public final class SecureSaxBuilder {
 		throw new IllegalStateException("Utility class");
 	}
 
+	/**
+	 * Creates a {@link SAXBuilder} with entity expansion disabled and common XXE-related features
+	 * set to a secure configuration.
+	 *
+	 * <p>If any required feature cannot be applied, the method fails closed by throwing an exception.
+	 *
+	 * @return a hardened SAX builder
+	 */
 	public static SAXBuilder create() {
 		SAXBuilder builder = new SAXBuilder();
 
@@ -32,6 +44,14 @@ public final class SecureSaxBuilder {
 		return builder;
 	}
 
+	/**
+	 * Sets a parser feature on the provided builder or throws an exception when unsupported.
+	 *
+	 * @param builder SAX builder to configure
+	 * @param feature SAX/Xerces feature URI
+	 * @param value feature value to set
+	 * @throws IllegalStateException when the underlying parser does not support the feature
+	 */
 	private static void setFeatureOrThrow(SAXBuilder builder, String feature, boolean value) {
 		try {
 			builder.setFeature(feature, value);

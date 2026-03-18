@@ -12,6 +12,13 @@ import javax.xml.bind.annotation.XmlRegistry;
 
 
 /**
+ * JAXB object factory for constructing rule store model objects.
+ *
+ * <p>JAXB uses this factory when unmarshalling XML documents, and callers may also use it to
+ * programmatically create {@link Rulestore}, {@link Ruleset}, and {@link Rule} instances.
+ *
+ * @version 1.1.0
+ * @since 1.1.0
  * This object contains factory methods for each 
  * Java content interface and Java element interface 
  * generated in the com.mulesoft.services.tools.validation.rules package. 

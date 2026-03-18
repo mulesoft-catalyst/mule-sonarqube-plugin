@@ -6,7 +6,13 @@ import org.slf4j.LoggerFactory;
 /**
  * Best-effort hardening for JAXP-based XML processing (DOM/XPath/etc).
  *
- * This complements {@link SecureSaxBuilder} (JDOM) by restricting external entity access in JAXP.
+ * <p>This complements {@link SecureSaxBuilder} (JDOM) by restricting external entity and stylesheet
+ * access for JAXP implementations. The hardening is applied via JVM system properties so that
+ * downstream JAXP factories inherit the restrictions.
+ *
+ * @version 1.1.0
+ * @since 1.1.0
+ * @see SecureSaxBuilder
  */
 public final class SecureJaxp {
 	private static final Logger logger = LoggerFactory.getLogger(SecureJaxp.class);
@@ -15,6 +21,12 @@ public final class SecureJaxp {
 		throw new IllegalStateException("Utility class");
 	}
 
+	/**
+	 * Applies secure-by-default system properties for XML processing.
+	 *
+	 * <p>The method only sets properties when they are not already defined so users can override
+	 * limits intentionally in their environment.
+	 */
 	public static void harden() {
 		// Restrict external entity / schema access for JAXP parsers (helps prevent XXE/SSRF).
 		setIfAbsent("javax.xml.accessExternalDTD", "");
@@ -28,6 +40,12 @@ public final class SecureJaxp {
 		setIfAbsent("jdk.xml.maxParameterEntitySizeLimit", "0");
 	}
 
+	/**
+	 * Sets a system property only when it is not already present.
+	 *
+	 * @param key property name
+	 * @param value property value to set when absent
+	 */
 	private static void setIfAbsent(String key, String value) {
 		String existing = System.getProperty(key);
 		if (existing == null) {

@@ -36,11 +36,34 @@ import com.mulesoft.services.tools.sonarqube.rule.MuleRulesDefinition;
 import com.mulesoft.services.tools.sonarqube.xml.SecureSaxBuilder;
 import com.mulesoft.services.xpath.XPathProcessor;
 
+/**
+ * Applies rules that are scoped to an individual file.
+ *
+ * <p>File-scoped rules are evaluated against the XML contents of a single Mule configuration file.
+ * When a rule fails, the strategy attempts to locate a more precise issue location using the
+ * optional {@code xpath-location-hint} parameter; otherwise, it falls back to a primary range
+ * near the top of the file.
+ *
+ * <p>For plugin version {@code 1.1}, evaluation is performed using {@link XmlFile} and W3C DOM
+ * nodes; earlier behavior uses JDOM parsing and evaluates against the JDOM root element.
+ *
+ * @version 1.1.0
+ * @since 1.1.0
+ */
 public class FileStrategyScope implements ScopeStrategy {
 	private final Logger logger = Loggers.get(FileStrategyScope.class);
 	SAXBuilder saxBuilder = SecureSaxBuilder.create();
 	private static final Pattern MATCHES_CALL = Pattern.compile("^\\s*matches\\((.+),\\s*'([^']*)'\\s*\\)\\s*$");
 
+	/**
+	 * Validates the given file against the provided rule and records an issue when the rule fails.
+	 *
+	 * @param xpathValidator XPath processor configured with namespaces
+	 * @param issues mutable issue collection keyed by rule
+	 * @param context active SonarQube sensor context
+	 * @param t the file being validated
+	 * @param rule the active rule being applied
+	 */
 	@Override
 	public void validate(XPathProcessor xpathValidator, Map<RuleKey, List<NewIssue>> issues, SensorContext context,
 			InputFile t, ActiveRule rule) {
@@ -105,6 +128,15 @@ public class FileStrategyScope implements ScopeStrategy {
 		}
 	}
 
+	/**
+	 * Validation path for plugin version {@code 1.1} that operates on a W3C DOM representation.
+	 *
+	 * @param xpathValidator XPath processor configured with namespaces
+	 * @param issues mutable issue collection keyed by rule
+	 * @param context active SonarQube sensor context
+	 * @param t the file being validated
+	 * @param rule the active rule being applied
+	 */
 	private void validateV11(XPathProcessor xpathValidator, Map<RuleKey, List<NewIssue>> issues, SensorContext context,
 			InputFile t, ActiveRule rule) {
 		try {
@@ -129,10 +161,30 @@ public class FileStrategyScope implements ScopeStrategy {
 		}
 	}
 
+	/**
+	 * Trims the input string, returning an empty string when the value is null.
+	 *
+	 * @param s the input string, may be null
+	 * @return the trimmed string, or {@code ""} when {@code s} is null
+	 */
 	private static String safeTrim(String s) {
 		return s == null ? "" : s.trim();
 	}
 
+	/**
+	 * Attempts to resolve an XPath “location hint” to a node in the XML document so issues can be
+	 * attached to a more precise location.
+	 *
+	 * <p>The hint is evaluated against the document root. As a compatibility fallback, this also
+	 * supports a limited {@code matches(<xpath>, '<regex>')} wrapper which filters nodes by matching
+	 * their value/text content against a regex.
+	 *
+	 * @param xmlFile parsed XML file
+	 * @param locationFindingXPath XPath expression used to find a location node
+	 * @param namespacesByPrefix namespace mappings used when evaluating the XPath expression
+	 * @return the node to attach the issue to, or null if not found
+	 * @throws XPathExpressionException when the XPath expression cannot be evaluated
+	 */
 	private static Node findLocationNode(XmlFile xmlFile, String locationFindingXPath,
 			Map<String, String> namespacesByPrefix) throws XPathExpressionException {
 		javax.xml.xpath.XPath xpath = XPathFactory.newInstance().newXPath();
@@ -161,13 +213,27 @@ public class FileStrategyScope implements ScopeStrategy {
 		}
 	}
 
+	/**
+	 * Simple {@link NamespaceContext} backed by a prefix-to-namespace map.
+	 */
 	private static final class MapNamespaceContext implements NamespaceContext {
 		private final Map<String, String> namespacesByPrefix;
 
+		/**
+		 * Creates a namespace context from the given prefix map.
+		 *
+		 * @param namespacesByPrefix prefix-to-namespace mappings
+		 */
 		private MapNamespaceContext(Map<String, String> namespacesByPrefix) {
 			this.namespacesByPrefix = namespacesByPrefix;
 		}
 
+		/**
+		 * Resolves a namespace URI for the given prefix.
+		 *
+		 * @param prefix namespace prefix
+		 * @return the namespace URI, or {@link XMLConstants#NULL_NS_URI} when unknown
+		 */
 		@Override
 		public String getNamespaceURI(String prefix) {
 			if (prefix == null) {
@@ -182,6 +248,12 @@ public class FileStrategyScope implements ScopeStrategy {
 			return namespacesByPrefix.getOrDefault(prefix, XMLConstants.NULL_NS_URI);
 		}
 
+		/**
+		 * Finds a single prefix mapped to the given namespace URI.
+		 *
+		 * @param namespaceURI namespace URI
+		 * @return a matching prefix, or null when none is found
+		 */
 		@Override
 		public String getPrefix(String namespaceURI) {
 			if (namespaceURI == null) {
@@ -195,6 +267,12 @@ public class FileStrategyScope implements ScopeStrategy {
 			return null;
 		}
 
+		/**
+		 * Returns all prefixes mapped to the given namespace URI.
+		 *
+		 * @param namespaceURI namespace URI
+		 * @return an iterator over matching prefixes
+		 */
 		@Override
 		public java.util.Iterator<String> getPrefixes(String namespaceURI) {
 			List<String> prefixes = new ArrayList<>();
@@ -209,6 +287,13 @@ public class FileStrategyScope implements ScopeStrategy {
 		}
 	}
 
+	/**
+	 * Adds the issue to the per-rule issue map.
+	 *
+	 * @param issues issue map to update
+	 * @param rule the rule key under which the issue should be stored
+	 * @param issue the issue to add
+	 */
 	private void addIssue(Map<RuleKey, List<NewIssue>> issues, ActiveRule rule, NewIssue issue) {
 
 		if (issues.containsKey(rule.ruleKey())) {

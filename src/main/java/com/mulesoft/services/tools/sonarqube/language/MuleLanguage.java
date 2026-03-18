@@ -6,10 +6,18 @@ import org.sonar.api.config.Configuration;
 import org.sonar.api.resources.AbstractLanguage;
 
 /**
- * Mule Language Definition
- * 
- * @author franco.parma
+ * Declares the Mule “language” for SonarQube so the plugin can register configuration
+ * properties and (optionally) participate in language detection.
  *
+ * <p>This plugin intentionally defaults {@link #FILE_SUFFIXES_DEFAULT_VALUE} to an empty
+ * value to avoid colliding with SonarQube’s built-in XML analyzer on {@code .xml}. Mule
+ * XML configuration files are still analyzed by the plugin via its own scanning logic
+ * (see {@link #SCAN_FILE_SUFFIXES_KEY}).
+ *
+ * @author franco.parma
+ * @version 1.1.0
+ * @since 1.1.0
+ * @see com.mulesoft.services.tools.sonarqube.MulePlugin
  */
 public class MuleLanguage extends AbstractLanguage {
 
@@ -36,11 +44,26 @@ public class MuleLanguage extends AbstractLanguage {
 	public static final String SCAN_FILE_SUFFIXES_KEY = "sonar.mule.scan.file.suffixes";
 	public static final String SCAN_FILE_SUFFIXES_DEFAULT_VALUE = ".xml";
 
+	/**
+	 * Creates a language descriptor backed by SonarQube configuration.
+	 *
+	 * @param config SonarQube configuration used to resolve file suffixes
+	 */
 	public MuleLanguage(Configuration config) {
 		super("mule", LANGUAGE_NAME);
 		this.config = config;
 	}
 
+	/**
+	 * Returns the file suffixes used by SonarQube to detect Mule language files.
+	 *
+	 * <p>This is driven by {@link #FILE_SUFFIXES_KEY}. When no suffixes are configured,
+	 * the method falls back to {@link #FILE_SUFFIXES_DEFAULT_VALUE}, which is empty by
+	 * default to prevent conflicts with the XML analyzer.
+	 *
+	 * @return an array of configured suffixes, or an empty array when language detection
+	 *         should not rely on suffixes
+	 */
 	@Override
 	public String[] getFileSuffixes() {
 		String[] suffixes = config.getStringArray(FILE_SUFFIXES_KEY);

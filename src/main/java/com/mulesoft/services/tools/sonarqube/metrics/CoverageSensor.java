@@ -25,6 +25,24 @@ import com.mulesoft.services.tools.sonarqube.language.MuleLanguage;
 import com.mulesoft.services.tools.sonarqube.properties.MuleProperties;
 import com.mulesoft.services.tools.sonarqube.sensor.MuleSensor;
 
+/**
+ * Imports MUnit coverage results and reports them as SonarQube coverage on Mule configuration files.
+ *
+ * <p>The sensor supports different report locations/formats for Mule 3 and Mule 4:
+ * <ul>
+ *   <li>Mule 3: {@code target/munit-reports/coverage-json/report.json}</li>
+ *   <li>Mule 4: {@code target/site/munit/coverage/munit-coverage.json}</li>
+ * </ul>
+ *
+ * <p>The JSON schema differs between versions; field names are externalized via {@link MuleProperties}
+ * so the same parsing logic can be used for both.
+ *
+ * <p>If the report is missing, the sensor records 0 hits for every line in each Mule config file so
+ * coverage-based quality gates can fail deterministically.
+ *
+ * @version 1.1.0
+ * @since 1.1.0
+ */
 public class CoverageSensor implements Sensor {
 
 	private final Logger logger = Loggers.get(CoverageSensor.class);
@@ -46,12 +64,22 @@ public class CoverageSensor implements Sensor {
 			+ "site" + java.io.File.separator + "munit" + java.io.File.separator + "coverage" + java.io.File.separator
 			+ "munit-coverage.json";
 
+	/**
+	 * Describes this sensor for SonarQube and restricts it to Mule language projects.
+	 *
+	 * @param descriptor the sensor descriptor
+	 */
 	@Override
 	public void describe(SensorDescriptor descriptor) {
 		descriptor.name("Compute the coverage of the applications");
 		descriptor.onlyOnLanguage(MuleLanguage.LANGUAGE_KEY);
 	}
 
+	/**
+	 * Loads the MUnit coverage report (if present) and saves coverage onto each Mule configuration file.
+	 *
+	 * @param context sensor execution context
+	 */
 	@Override
 	public void execute(SensorContext context) {
 		File munitJsonReport = new File(context.fileSystem().baseDir()
@@ -92,6 +120,13 @@ public class CoverageSensor implements Sensor {
 		}
 	}
 
+	/**
+	 * Parses a MUnit JSON report file and aggregates coverage information per configuration file.
+	 *
+	 * @param props language-specific properties mapping JSON field names
+	 * @param munitJsonReport report file to read
+	 * @return a map keyed by file name/path to the aggregated coverage counter (may be null on failure)
+	 */
 	private Map<String, FlowCoverageCounter> loadResults(Properties props, File munitJsonReport) {
 		Map<String, FlowCoverageCounter> coverageMap = null;
 		try (Scanner scanner = new Scanner(munitJsonReport)) {
@@ -148,6 +183,17 @@ public class CoverageSensor implements Sensor {
 
 	}
 
+	/**
+	 * Saves coverage to SonarQube for the given file when a matching coverage entry is available.
+	 *
+	 * <p>When the report contains explicit line numbers, those are used. Otherwise the sensor maps
+	 * covered/uncovered message processor counts onto synthetic line numbers starting at 1.
+	 *
+	 * @param coverageMap parsed coverage data keyed by file name/path
+	 * @param fileName file name used as a lookup key
+	 * @param context sensor context used to create and save coverage
+	 * @param file the SonarQube input file receiving coverage
+	 */
 	private void saveCoverage(Map<String, FlowCoverageCounter> coverageMap, String fileName, SensorContext context,
 			InputFile file) {
 

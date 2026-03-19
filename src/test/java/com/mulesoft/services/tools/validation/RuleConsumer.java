@@ -20,10 +20,16 @@ import com.mulesoft.services.tools.validation.rules.Rulestore;
 import com.mulesoft.services.xpath.XPathProcessor;
 
 /**
- * Consume each file evaluating all the rules
- * 
- * @author franco.parma
+ * Applies a {@link Rulestore} to each file encountered during a directory walk.
  *
+ * <p>This test-only consumer parses each file as XML and evaluates every XPath rule from the rule
+ * store against the document root, logging the result. It is used by {@link Validator} to smoke
+ * test rule evaluation across fixture directories.
+ *
+ * @author franco.parma
+ * @version 1.1.0
+ * @since 1.1.0
+ * @see Validator
  */
 public class RuleConsumer implements Consumer<Path> {
 
@@ -32,12 +38,22 @@ public class RuleConsumer implements Consumer<Path> {
 	Rulestore store;
 	XPathProcessor xpathProcessor;
 
+	/**
+	 * Creates a consumer configured for the namespaces required by the given rule store.
+	 *
+	 * @param store rule store containing rulesets and a {@code type} (mule3/mule4)
+	 */
 	public RuleConsumer(Rulestore store) {
 		this.store = store;
 		xpathProcessor = new XPathProcessor().loadNamespaces(
 				store.getType().equals(Constants.Ruleset.MULE3) ? "namespace-3.properties" : "namespace-4.properties");
 	}
 
+	/**
+	 * Consumes a path, and when it is a file, evaluates all rules against it.
+	 *
+	 * @param t path to evaluate
+	 */
 	@Override
 	public void accept(Path t) {
 		if (logger.isDebugEnabled()) {
@@ -49,6 +65,12 @@ public class RuleConsumer implements Consumer<Path> {
 		}
 	}
 
+	/**
+	 * Parses a single XML file and evaluates every rule in every ruleset.
+	 *
+	 * @param rulesets rulesets to evaluate
+	 * @param file XML file to parse and validate
+	 */
 	private void validateRule(List<Ruleset> rulesets, File file) {
 		try {
 			Document document = saxBuilder.build(file);

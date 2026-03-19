@@ -14,6 +14,16 @@ import org.junit.Test;
 
 import com.mulesoft.services.xpath.XPathProcessor;
 
+/**
+ * Integration-style tests for Mule 4 rule evaluation and XPath extensions.
+ *
+ * <p>These tests use representative Mule 4 XML fixtures to validate rule expressions (count/matches)
+ * and verify the custom Jaxen extension function {@code is-configurable()}.
+ *
+ * @version 1.1.0
+ * @since 1.1.0
+ * @see XPathProcessor
+ */
 public class Mule4Test {
 	Validator val = null;
 	String testPath = "src/test/resources/mule4";
@@ -21,6 +31,9 @@ public class Mule4Test {
 	SAXBuilder saxBuilder = new SAXBuilder();
 	String testDirectory = null;
 
+	/**
+	 * Initializes the Mule 4 validator and loads Mule 4 namespace mappings for XPath evaluation.
+	 */
 	@Before
 	public void setUp() {
 		val = new Validator(Constants.Ruleset.MULE4);
@@ -29,6 +42,12 @@ public class Mule4Test {
 	}
 
 
+	/**
+	 * Asserts a rule that limits the number of Mule sub-flows in a file.
+	 *
+	 * @throws JDOMException when XML parsing fails
+	 * @throws IOException when the fixture cannot be read
+	 */
 	@Test
 	public void testRuleCountSubFlow() throws JDOMException, IOException {
 		String rule = "not(count(//mule:mule/mule:sub-flow)>=5)";
@@ -39,6 +58,12 @@ public class Mule4Test {
 		assertTrue("SUB FLOW MUST BE LESS THAN 5", valid);
 	}
 
+	/**
+	 * Asserts a rule that requires database connection hostnames to be configured via placeholders.
+	 *
+	 * @throws JDOMException when XML parsing fails
+	 * @throws IOException when the fixture cannot be read
+	 */
 	@Test
 	public void testRuleDBProperties() throws JDOMException, IOException {
 		String rule = "matches(//mule:mule/db:config/db:mssql-connection/@host, '^\\$\\{.*\\}$')";
@@ -49,6 +74,12 @@ public class Mule4Test {
 		assertTrue("DB CONFIG HOST MUST HAVE A PROP PLACEHOLDER", valid);
 	}
 	
+	/**
+	 * Asserts a domain configuration rule that ensures response timeouts are configurable placeholders.
+	 *
+	 * @throws JDOMException when XML parsing fails
+	 * @throws IOException when the fixture cannot be read
+	 */
 	@Test
 	public void testDomain() throws JDOMException, IOException {
 		String rule = "count(//domain:mule-domain/http:request-config[not(@responseTimeout) or not(matches(@responseTimeout,'^\\$\\{.*\\}$'))]) = 0";
@@ -59,6 +90,12 @@ public class Mule4Test {
 		assertTrue("HTTP Requestor Configuration should have a configurable Response Timeout", valid);
 	}
 
+	/**
+	 * Asserts the legacy Jaxen extension function {@code is-configurable()} returns true for placeholder values.
+	 *
+	 * @throws JDOMException when XML parsing fails
+	 * @throws IOException when the fixture cannot be read
+	 */
 	@Test
 	public void testIsConfigurable() throws JDOMException, IOException {
 		String rule = "is-configurable(//mule:mule/secure-properties:config/@key)";

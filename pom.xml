@@ -16,19 +16,45 @@
 		<maven.compiler.target>1.8</maven.compiler.target>
 		<maven.compiler.source>1.8</maven.compiler.source>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<sonar.apiVersion>7.7</sonar.apiVersion>
+		<!-- Align API level with SonarQube 9.9 LTS -->
+		<sonar.apiVersion>9.9.0.229</sonar.apiVersion>
 		<jaxb.api.version>2.3.3</jaxb.api.version>
-		<jaxb.version>2.3.2</jaxb.version>
+		<jaxb.version>2.3.9</jaxb.version>
+		<jackson.version>2.21.1</jackson.version>
+		<jackson.annotations.version>2.21</jackson.annotations.version>
+		<xerces.version>2.12.2</xerces.version>
+		<woodstox.version>6.4.0</woodstox.version>
+		<stax2.version>4.2.1</stax2.version>
 	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>xerces</groupId>
+				<artifactId>xercesImpl</artifactId>
+				<version>${xerces.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.fasterxml.woodstox</groupId>
+				<artifactId>woodstox-core</artifactId>
+				<version>${woodstox.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.codehaus.woodstox</groupId>
+				<artifactId>stax2-api</artifactId>
+				<version>${stax2.version}</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<dependencies>
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
-			<version>4.13.1</version>
+			<version>4.13.2</version>
 		</dependency>
 		<dependency>
-			<groupId>org.sonarsource.sonarqube</groupId>
+			<groupId>org.sonarsource.api.plugin</groupId>
 			<artifactId>sonar-plugin-api</artifactId>
 			<!-- minimal version of SonarQube to support. Note that the groupId was
 				"org.codehaus.sonar" before version 5.2 -->
@@ -39,7 +65,7 @@
 		<dependency>
 			<groupId>org.sonarsource.analyzer-commons</groupId>
 			 <artifactId>sonar-xml-parsing</artifactId>
-			 <version>1.12.0.632</version>
+			 <version>2.21.0.4626</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jdom</groupId>
@@ -49,17 +75,28 @@
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>1.7.25</version>
+			<version>2.0.17</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>jaxen</groupId>
 			<artifactId>jaxen</artifactId>
-			<version>1.1.6</version>
+			<version>2.0.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
-			<version>2.17.2</version>
+			<version>${jackson.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
+			<version>${jackson.annotations.version}</version>
 		</dependency>
 
 		<!-- Compliance JAVA 11 -->
@@ -75,12 +112,6 @@
 			<artifactId>jaxb-runtime</artifactId>
 			<version>${jaxb.version}</version>
 		</dependency>
-
-		<dependency>
-			<groupId>javax.activation</groupId>
-			<artifactId>activation</artifactId>
-			<version>1.1</version>
-		</dependency>
 	</dependencies>
 	<build>
 		<finalName>${project.artifactId}-${project.version}-mule</finalName>
@@ -88,7 +119,7 @@
 			<plugin>
 				<groupId>org.sonarsource.sonar-packaging-maven-plugin</groupId>
 				<artifactId>sonar-packaging-maven-plugin</artifactId>
-				<version>1.17</version>
+				<version>1.25.1.3002</version>
 				<extensions>true</extensions>
 				<configuration>
 					<!-- the entry-point class that extends org.sonar.api.SonarPlugin -->

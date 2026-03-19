@@ -148,6 +148,35 @@ For example, the rule store (rules-4.xml) has three rulesets (categories):
     </ruleset>
 </rulestore>
 ```
+
+**Rule Store Example (v1.1 / `javax.xml` XPath with node-scope)**
+```xml
+<rulestore type="mule4">
+  <ruleset category="configuration" pluginVersion="1.1">
+    <!-- Node-scope rule: selects each violating node; SonarQube raises one issue per node -->
+    <rule id="1"
+          name="Hardcoded Salesforce connection values are not allowed"
+          description="Detects hardcoded values in Salesforce connection attributes; values must be configurable placeholders like ${...}."
+          severity="MAJOR"
+          applies="node"
+          type="code_smell"
+          pluginVersion="1.1">
+      //salesforce:cached-basic-connection//@*[f:isNotConfigurable(.)]
+    </rule>
+
+    <!-- File-scope rule: must evaluate true per file (uses JAXP boolean evaluation) -->
+    <rule id="2"
+          name="APIKit must be configured"
+          description="Ensures the application uses APIKit by requiring at least one apikit:config element."
+          severity="MAJOR"
+          applies="file"
+          type="code_smell"
+          pluginVersion="1.1">
+      count(//mule:mule/apikit:config) &gt; 0
+    </rule>
+  </ruleset>
+</rulestore>
+```
 ### Measures
 The plugin handles different types of metrics, such as:
 - Number of Flows 

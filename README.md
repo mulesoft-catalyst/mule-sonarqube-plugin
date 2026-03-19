@@ -28,9 +28,11 @@ For more information, about SonarQube please refer to: https://www.sonarqube.org
 
 This is an [UNLICENSED software, please review the considerations](UNLICENSE.md). If you need assistance for extending this, contact MuleSoft Professional Services
 
-**Minimum SonarQube version**: 7.7 (this plugin is built against `sonar-plugin-api` 7.7).
+**Minimum SonarQube version**: **9.9 LTS** (this plugin is built against `sonar-plugin-api` 9.9).
 
 **Security**: XML parsing is hardened against XXE (external entities/DTDs are blocked). The optional namespace extension property `sonar.mule.namespace.properties` supports only local specs (`classpath:` / `file:` / filesystem path); `http(s)` is not allowed.
+
+**Note**: SonarQube 9.9 LTS requires Java 17 to run the server.
 
 ## SonarQube Concepts
 ### Issues
@@ -70,25 +72,24 @@ For more information, please refer to https://docs.sonarqube.org/latest/user-gui
 
 ### Rules
 They are created based on a file, named rule store. In this rule store, you could define:
--**rulesets**: A way to group the rules by a category. The category itself could be anything, for example, categories like application, configuration, api, or batch could be used. When inspecting a particular project, you could specify which categories (rules) you want to inspect by running for example, mvn sonar:sonar -Dsonar.mule.ruleset.categories=flows,configuration,api
--**rules**: the rule itself, with these attributes:
-- id: a sequential number inside of the ruleset
-- name: meaningful name of rule
-- description: a more complete identification of the rule. It supports HTML
-- severity: the severity of the rule. Possible values are:
-    - BLOCKER
-    - CRITICAL
-    - MAJOR
-    - MINOR
-    - INFO
-- type: the type of the issue that is going to be raised. Possible values are:
-    - code_smell
-    - bug
-    - vulnerability
-- applies: is the scope of the rule, how is it going to be applied, if the rule is going to be validated against a single file or the entire project. For example, if you want to validate that your application is using APIKIT you need to validate the rule throw all the files of the project. Possible values are:
-    - file
-    - application
-- content: xpath expresion to be evaluated.
+- **rulesets**: a way to group rules by a category. Categories can be anything (e.g., application, configuration, api, batch).
+  - You can filter which categories run during analysis with `-Dsonar.mule.ruleset.categories=flows,configuration,api`.
+- **rules**: the rule itself, with these attributes:
+  - **id**: a sequential number inside of the ruleset
+  - **name**: meaningful name of rule
+  - **description**: a more complete identification of the rule (supports HTML)
+  - **severity**: the severity of the rule. Possible values are: `BLOCKER`, `CRITICAL`, `MAJOR`, `MINOR`, `INFO`
+  - **type**: the type of the issue that is going to be raised. Possible values are: `code_smell`, `bug`, `vulnerability`
+  - **applies**: the scope of the rule. Possible values are:
+    - `file`: evaluated per file
+    - `application`: must evaluate true for at least one file in the project
+    - `project`: validates project metadata (e.g., `sonar.projectName` / `sonar.projectKey`) using a regex
+    - `node` (v1.1 rules only): selects violating nodes; an issue is created per node
+  - **pluginVersion** (optional): rule format version:
+    - `1.0` (default): JDOM2/Jaxen evaluation path
+    - `1.1`: `javax.xml` (JAXP) XPath evaluation path (enables node-scope rules and accurate locations)
+  - **locationHint** (optional): an XPath expression used to locate/anchor the issue when the rule fails (mainly used in file-scope rules)
+  - **content**: XPath expression to be evaluated.
 
 Currently, there are two files (rule stores), one per each mule runtime version (3|4).
 For example, the rule store (rules-4.xml) has three rulesets (categories):
@@ -170,8 +171,8 @@ You **do not need** to remove `.xml` from the built-in XML language settings. If
 1. Plugin Generation
     - Download the module source code.
     - Open a terminal window and browse to module root folder.
-    - Build the mule plugin for Mule rules running `mvn clean package sonar-packaging:sonar-plugin -Dlanguage=mule`.
-    - Copy the generated file, mule-validation-sonarqube-plugin-{version}-mule.jar to *sonar-home*/extensions/plugins
+    - Build the plugin running `mvn -DskipTests package`.
+    - Copy the generated file `target/mule-validation-sonarqube-plugin-1.1.0-mule.jar` to `SONARQUBE_HOME/extensions/plugins/`.
 
 2. Rules files
     - Rules are **embedded inside the plugin JAR** by default.
@@ -240,11 +241,10 @@ Once you run the command, you will see the project and the information about it 
 ### Try it out
 
 ```cmd
-docker pull fperezpa/mulesonarqube:7.7.3
-docker run -d --name sonarqube -p 9000:9000 -p 9092:9092 fperezpa/mulesonarqube:7.7.3
+docker run -d --name sonarqube-mule -p 9000:9000 sonarqube:lts-community
 ```
 *Disclaimer*
-The docker image is based on the official SonarQube Image, *sonarqube:7.7-community*. For more information please visit, https://hub.docker.com/_/sonarqube/
+The docker image is based on the official SonarQube Image. For more information please visit https://hub.docker.com/_/sonarqube/
 
 
 ## Final Notes

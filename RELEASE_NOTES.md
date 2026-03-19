@@ -115,7 +115,15 @@ This release expands the built-in Mule 4 namespace mappings to cover more common
 
 This release introduces **v1.1 rules** backed by the standard `javax.xml` (JAXP) XPath engine, enabling **node-based rules** with accurate issue locations and multiple issues per rule per file.
 
+### Credits
+
+- Thanks to [@trentbowman](https://github.com/trentbowman) for originally proposing the move to `javax.xml` (JAXP) XPath evaluation and providing the fixes required to make it work reliably.
+
 ### Fixes / improvements
+
+- **Build/packaging: generate proper Sonar plugin manifest**
+  - Updated `pom.xml` packaging to `sonar-plugin` so the built artifact includes required plugin manifest headers (e.g., `Plugin-Key`, `Plugin-Class`, `Plugin-Version`) and can be loaded by SonarQube.
+  - Removed the unused `log4j-slf4j-impl` dependency to satisfy `sonar-packaging-maven-plugin` dependency checks and avoid shipping an unnecessary logging backend inside the plugin.
 
 - **#23 – Enable better issue location reporting**
   - Added **node-scope** rules for v1.1 that return the exact violating nodes (elements/attributes). SonarQube issues are now anchored directly to those nodes without requiring a separate `locationHint`.

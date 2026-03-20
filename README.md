@@ -346,6 +346,12 @@ docker build -t sonarqube-with-mule-plugin -f Dockerfile.sonarqube-mule .
 docker rm -f sonarqube-mule 2>/dev/null || true
 docker run -d --name sonarqube-mule -p 9000:9000 sonarqube-with-mule-plugin
 ```
+
+#### Option C: Prebuilt Docker Image with mule-validation-sonaqube-plugin v1.1.0
+```
+docker run -d --name sonarqube-mule -p 9000:9000 pitaliyapankaj/mule-sonarqube-plugin:latest
+```
+
 *Disclaimer*
 The docker image is based on the official SonarQube Image. For more information please visit https://hub.docker.com/_/sonarqube/
 

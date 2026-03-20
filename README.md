@@ -55,7 +55,7 @@ For more information, please refer to https://docs.sonarqube.org/latest/user-gui
 Quality profiles are collections of rules defined for each language that is going to be executed during the inspection of the code.
 The plugin defines one Language, Mule, and two profiles, one for each version of mule. Each one of these profiles defines a set of rules that can be updated easily.
 
-![qualityprofiles](/img/quality-profiles.png)
+![qualityprofiles](/img/1.1/quality-profiles.png)
 
 ### Measures
 Depending on the language, different metrics are being calculated. Issues are one type of metric, but you will have more information about the project, information such as, for example, Size, Complexity, and Coverage.
@@ -195,7 +195,7 @@ This plugin scans Mule configuration XML files by detecting Mule's core namespac
 
 You **do not need** to remove `.xml` from the built-in XML language settings. If you want to avoid XML analyzer rules running on Mule configuration files, prefer using exclusions on the XML analyzer or project exclusions instead of removing `.xml` globally.
 
-![serverconfig](/img/server-conf-1.png)
+![serverconfig](/img/1.1/server-conf-1.png)
 #### Plugin
 1. Plugin Generation
     - Download the module source code.
@@ -215,12 +215,12 @@ The jar file of the plugin has to be placed in the following folder <server-home
 #### Quality Profile
 By default, the mule 4 quality profile is going to be used. In case you are analyzing a mule 3 you need to change it, to do that, as an administrator, go to the project -> Administration -> Quality Profiles and change the profile for the Mule Language.
 
-![quality-profiles-conf](/img/quality-profiles-conf.png)
+![quality-profiles-conf](/img/1.1/quality-profiles-conf.png)
 
 #### Quality Gate
 If you have created a custom Mule Quality Gate, to enforce it on a project, you will have to go to the project -> Administration -> Quality Gates and change the gate previously selected.
 
-![quality-gate](/img/quality-gate.png)
+![quality-gate](/img/1.1/quality-gate.png)
 
 ## Execution
 
@@ -257,15 +257,15 @@ Once you run the command, you will see the project and the information about it 
 
 ***Overview***
 
-![project-overview](/img/project-overview.png)
+![project-overview](/img/1.1/project-overview.png)
 
 ***Issues***
 
-![project-issues](/img/project-issues.png)
+![project-issues](/img/1.1/project-issues.png)
 
 ***Measures***
 
-![project-measures](/img/project-measures.png)
+![project-measures](/img/1.1/project-measures.png)
 
 ### Try it out
 

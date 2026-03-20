@@ -269,8 +269,82 @@ Once you run the command, you will see the project and the information about it 
 
 ### Try it out
 
+The easiest way to run SonarQube locally with this plugin is to use the official SonarQube Docker image
+and mount the plugin JAR into the container.
+
+#### Option A (recommended): Run SonarQube and mount the plugin JAR
+
+1) Build the plugin JAR:
+
 ```cmd
-docker run -d --name sonarqube-mule -p 9000:9000 sonarqube:lts-community
+mvn -DskipTests package
+```
+
+This produces:
+
+```cmd
+target/mule-validation-sonarqube-plugin-1.1.0-mule.jar
+```
+
+2) Start SonarQube with the plugin mounted into `extensions/plugins/`:
+
+On **Windows (cmd.exe)**:
+
+```cmd
+docker rm -f sonarqube-mule 2>nul
+
+docker run -d --name sonarqube-mule ^
+  -p 9000:9000 ^
+  -v "%cd%/target/mule-validation-sonarqube-plugin-1.1.0-mule.jar:/opt/sonarqube/extensions/plugins/mule-validation-sonarqube-plugin-1.1.0-mule.jar" ^
+  sonarqube:latest
+```
+
+If you are on macOS/Linux, the same command uses `$(pwd)` instead of `%cd%` and does not need `^`:
+
+```bash
+docker rm -f sonarqube-mule 2>/dev/null || true
+
+docker run -d --name sonarqube-mule \
+  -p 9000:9000 \
+  -v "$(pwd)/target/mule-validation-sonarqube-plugin-1.1.0-mule.jar:/opt/sonarqube/extensions/plugins/mule-validation-sonarqube-plugin-1.1.0-mule.jar" \
+  sonarqube:latest
+```
+
+3) Watch startup logs and confirm the server is healthy:
+
+```cmd
+docker logs -f sonarqube-mule
+```
+
+Then open `http://localhost:9000/`.
+
+#### Option B: Build a local Docker image (without committing a Dockerfile)
+
+If you prefer an image that already contains the plugin, you can create a Dockerfile locally (not committed)
+and build it.
+
+1) Build the plugin JAR:
+
+```cmd
+mvn -DskipTests package
+```
+
+2) Create a temporary Dockerfile and build:
+
+```bash
+cat > Dockerfile.sonarqube-mule <<'EOF'
+FROM sonarqube:latest
+COPY target/mule-validation-sonarqube-plugin-1.1.0-mule.jar /opt/sonarqube/extensions/plugins/
+EOF
+
+docker build -t sonarqube-with-mule-plugin -f Dockerfile.sonarqube-mule .
+```
+
+3) Run the image:
+
+```bash
+docker rm -f sonarqube-mule 2>/dev/null || true
+docker run -d --name sonarqube-mule -p 9000:9000 sonarqube-with-mule-plugin
 ```
 *Disclaimer*
 The docker image is based on the official SonarQube Image. For more information please visit https://hub.docker.com/_/sonarqube/

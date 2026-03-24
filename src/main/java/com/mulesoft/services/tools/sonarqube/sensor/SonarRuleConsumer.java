@@ -49,6 +49,7 @@ public class SonarRuleConsumer implements Consumer<InputFile> {
 	String language;
 	XPathProcessor xpathProcessor;
 	List<String> filteredCategories = new ArrayList<String>();
+	String repositoryKey;
 
 	private static final String FILTER_RULESET_PROPERTY = "sonar.property.ruleset.categories";
 	private static final String EXTRA_NAMESPACES_SPEC_KEY = "sonar.mule.namespace.properties";
@@ -65,6 +66,9 @@ public class SonarRuleConsumer implements Consumer<InputFile> {
 		this.language = language;
 		this.context = context;
 		this.issues = issues;
+		this.repositoryKey = language != null && language.equals(MuleLanguage.LANGUAGE_MULE3_KEY)
+				? MuleRulesDefinition.MULE3_REPOSITORY_KEY
+				: MuleRulesDefinition.MULE4_REPOSITORY_KEY;
 		xpathProcessor = new XPathProcessor().loadNamespaces(
 				language.equals(MuleLanguage.LANGUAGE_MULE4_KEY) ? "namespace-4.properties" : "namespace-3.properties");
 
@@ -90,7 +94,9 @@ public class SonarRuleConsumer implements Consumer<InputFile> {
 			logger.debug("Validating mule file:" + t.filename());
 		}
 
-		Collection<ActiveRule> activeRules = this.context.activeRules().findByLanguage(MuleLanguage.LANGUAGE_KEY);
+		// Important: only apply Mule XML/XPath rules here. DataWeave rules share the same "mule" language
+		// key for indexing, but they must be executed by the DataWeave sensor.
+		Collection<ActiveRule> activeRules = this.context.activeRules().findByRepository(repositoryKey);
 
 		Iterator<ActiveRule> iterator = rulesIterator(activeRules);
 

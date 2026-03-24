@@ -30,6 +30,10 @@ This is an [UNLICENSED software, please review the considerations](UNLICENSE.md)
 
 **Minimum SonarQube version**: **9.9 LTS** (this plugin is built against `sonar-plugin-api` 9.9).
 
+**Highlights**:
+- **DataWeave scanning**: `.dwl` files are indexed under the Mule language and scanned with DataWeave-specific rules (currently 2 rules: **Remove commented-out code** and **DataWeave file should not be too large**).
+- **MUnit coverage in SonarQube**: imports MUnit coverage JSON reports so coverage is visible in SonarQube (see [MUnit coverage JSON report location](#munit-coverage-json-report-location)).
+
 **Security**: XML parsing is hardened against XXE (external entities/DTDs are blocked). The optional namespace extension property `sonar.mule.namespace.properties` supports only local specs (`classpath:` / `file:` / filesystem path); `http(s)` is not allowed.
 
 **Note**: SonarQube 9.9 LTS requires Java 17 to run the server.
@@ -108,6 +112,8 @@ For example, the rule store (rules-4.xml) has three rulesets (categories):
     - Validate HTTPS is being used. (7)
     - Validate HTTP Configuration has the corresponding port placeholders. (8)
     - Validate autodiscovery configuration is not being hardcoded. (9)
+
+DataWeave rules are defined separately in `rules-dataweave.xml` and are evaluated by the DataWeave sensor on `.dwl` files (independent of Mule XML/XPath rules).
 
 **Rule Store Example**
 ```xml
@@ -207,6 +213,13 @@ Paths can be **absolute** or **relative to the module base directory** being ana
 ## Configuration
 ### Server
 This plugin scans Mule configuration XML files by detecting Mule's core namespace (`http://www.mulesoft.org/schema/mule/core`) and by the configurable suffix list `sonar.mule.scan.file.suffixes` (default: `.xml`).
+
+DataWeave source files (`.dwl`) are included in the analysis under the **Mule** language by default. The default language suffix list (`sonar.mule.file.suffixes`) is set to `.dwl` so these files show up in SonarQube and can carry issues.
+
+The DataWeave sensor scans files by the configurable suffix list `sonar.mule.dataweave.file.suffixes` (default: `.dwl`).
+
+![serverconfig](/img/1.1/dataweave.png)
+
 
 You **do not need** to remove `.xml` from the built-in XML language settings. If you want to avoid XML analyzer rules running on Mule configuration files, prefer using exclusions on the XML analyzer or project exclusions instead of removing `.xml` globally.
 

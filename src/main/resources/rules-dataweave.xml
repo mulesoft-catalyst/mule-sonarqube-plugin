@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  DataWeave rules for the Mule SonarQube plugin.
+
+  How to add a new rule
+  (overview)
+  1) Add a <rule> entry below with:
+     - id          : unique rule key (used as the SonarQube rule key)
+     - name        : user-visible name
+     - description : user-visible description
+     - severity    : one of BLOCKER | CRITICAL | MAJOR | MINOR | INFO
+     - type        : one of code_smell | bug | vulnerability
+
+  2) Decide what the rule "value" (the element body text) means for that rule.
+     - For "commented-out-code" we keep a symbolic value.
+     - For "too-large-file" we store the default max line count (e.g. 5000).
+
+  3) Make the rule actually run:
+     - Implement the rule behavior in:
+         src/main/java/com/mulesoft/services/tools/sonarqube/sensor/DataWeaveSensor.java
+       (add a new branch keyed by rule id, create issues, pick locations/messages).
+
+  4) If the rule needs configurable parameters (beyond the XML default value):
+     - Add a rule parameter in:
+         src/main/java/com/mulesoft/services/tools/sonarqube/rule/DataWeaveRulesDefinition.java
+       Example: "too-large-file" creates param "maxLines" with a default sourced from this XML.
+
+  Notes
+  (notes)
+  - This file is embedded in the plugin JAR at build time (classpath:rules-dataweave.xml).
+  - At runtime you can override it without rebuilding by placing a file at:
+      $SONARQUBE_HOME/extensions/plugins/rules-dataweave.xml
+-->
+
+<rulestore type="dataweave">
+	<ruleset category="dataweave" pluginVersion="1.1">
+		<rule id="commented-out-code"
+			name="Remove commented-out code"
+			description="Commented-out DataWeave code should be removed. Keeping disabled code in comments makes the script harder to read, increases maintenance cost, and can hide outdated logic."
+			severity="MAJOR" type="code_smell">
+			commented-out-code
+		</rule>
+		<rule id="too-large-file"
+			name="DataWeave file should not be too large"
+			description="DataWeave files should be kept reasonably small. Large scripts become harder to understand, test, and maintain. Consider extracting reusable logic into functions/modules or splitting transformations."
+			severity="MAJOR" type="code_smell">
+			50
+		</rule>
+	</ruleset>
+</rulestore>
+

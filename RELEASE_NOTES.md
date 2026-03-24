@@ -112,6 +112,13 @@ This release focuses on:
 - **Scanning property**: 
   - configure scanned suffixes with `sonar.mule.scan.file.suffixes` (default `.xml`). This is separate from SonarQube language detection.
 
+- **DataWeave (`.dwl`) scanning and rules**:
+  - DWL files are indexed under the Mule language by default (`sonar.mule.file.suffixes` defaults to `.dwl`).
+  - A dedicated DataWeave sensor scans `sonar.mule.dataweave.file.suffixes` (default `.dwl`) and evaluates DataWeave-specific rules loaded from `rules-dataweave.xml` (embedded in the plugin, with optional server override at `extensions/plugins/rules-dataweave.xml`).
+  - Built-in DataWeave rules (initial set):
+    - **Remove commented-out code**
+    - **DataWeave file should not be too large** (line-count threshold configured via the rule parameter defaulted from `rules-dataweave.xml`)
+
 - **Rule versioning (`pluginVersion`)**
   - Existing rules continue to work as **v1.0** (JDOM2 path) by default.
   - Rules (or rulesets) that set `pluginVersion="1.1"` use the new `javax.xml` XPath path.

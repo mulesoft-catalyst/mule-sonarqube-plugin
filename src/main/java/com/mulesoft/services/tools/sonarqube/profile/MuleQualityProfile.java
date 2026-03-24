@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.sonar.api.server.profile.BuiltInQualityProfilesDefinition;
 
 import com.mulesoft.services.tools.sonarqube.language.MuleLanguage;
+import com.mulesoft.services.tools.sonarqube.rule.DataWeaveRulesDefinition;
 import com.mulesoft.services.tools.sonarqube.rule.MuleRulesDefinition;
 import com.mulesoft.services.tools.validation.RuleFactory;
 import com.mulesoft.services.tools.validation.rules.Ruleset;
@@ -47,6 +48,7 @@ public class MuleQualityProfile implements BuiltInQualityProfilesDefinition {
 		// profile3.setDefault(true);
 		activeRule(profile3, MuleRulesDefinition.MULE3_REPOSITORY_KEY, "file:extensions/plugins/rules-3.xml",
 				"classpath:rules-3.xml");
+		activateDataWeaveRules(profile3, "file:extensions/plugins/rules-dataweave.xml", "classpath:rules-dataweave.xml");
 		profile3.done();
 
 		// Mule4
@@ -57,7 +59,35 @@ public class MuleQualityProfile implements BuiltInQualityProfilesDefinition {
 				"classpath:rules-4.xml");
 		activeRule(profile4, MuleRulesDefinition.MULE4_REPOSITORY_KEY, "file:extensions/plugins/rules-4-custom.xml",
 				"classpath:rules-4-custom.xml");
+		activateDataWeaveRules(profile4, "file:extensions/plugins/rules-dataweave.xml", "classpath:rules-dataweave.xml");
 		profile4.done();
+	}
+
+	private void activateDataWeaveRules(NewBuiltInQualityProfile profile, String primaryRulesSpec, String fallbackRulesSpec) {
+		try {
+			Rulestore rules;
+			try {
+				rules = RuleFactory.loadRulesFromXml(primaryRulesSpec);
+			} catch (IOException | JAXBException primaryFailure) {
+				logger.warn("Failed to load rules from {}. Falling back to {}.", primaryRulesSpec, fallbackRulesSpec,
+						primaryFailure);
+				rules = RuleFactory.loadRulesFromXml(fallbackRulesSpec);
+			}
+			List<Ruleset> rulesetList = rules.getRuleset();
+			for (Iterator<Ruleset> iterator = rulesetList.iterator(); iterator.hasNext();) {
+				Ruleset ruleset = iterator.next();
+				List<com.mulesoft.services.tools.validation.rules.Rule> ruleList = ruleset.getRule();
+				for (Iterator<com.mulesoft.services.tools.validation.rules.Rule> ruleIterator = ruleList.iterator(); ruleIterator
+						.hasNext();) {
+					com.mulesoft.services.tools.validation.rules.Rule rule = ruleIterator.next();
+					// DataWeave repository uses rule.id as the rule key.
+					profile.activateRule(DataWeaveRulesDefinition.REPOSITORY_KEY, rule.getId());
+				}
+			}
+		} catch (JAXBException | IOException e) {
+			logger.error(e.getMessage(), e);
+			throw new RuntimeException(e.getMessage(), e);
+		}
 	}
 
 	/**

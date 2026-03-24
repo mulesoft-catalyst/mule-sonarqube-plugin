@@ -16,7 +16,9 @@ import com.mulesoft.services.tools.sonarqube.metrics.CoverageSensor;
 import com.mulesoft.services.tools.sonarqube.metrics.MUnitSensor;
 import com.mulesoft.services.tools.sonarqube.metrics.MuleMetrics;
 import com.mulesoft.services.tools.sonarqube.profile.MuleQualityProfile;
+import com.mulesoft.services.tools.sonarqube.rule.DataWeaveRulesDefinition;
 import com.mulesoft.services.tools.sonarqube.rule.MuleRulesDefinition;
+import com.mulesoft.services.tools.sonarqube.sensor.DataWeaveSensor;
 import com.mulesoft.services.tools.sonarqube.sensor.MuleSensor;
 import com.mulesoft.services.tools.sonarqube.xml.SecureJaxp;
 
@@ -59,11 +61,12 @@ public class MulePlugin implements Plugin {
 		SecureJaxp.harden();
 
 		// Added Language
-		context.addExtensions(MuleLanguage.class, MuleSensor.class);
+		context.addExtensions(MuleLanguage.class, MuleSensor.class, DataWeaveSensor.class);
 		// context.addExtension(getProperties());
 
 		// Added Rules
 		context.addExtension(MuleRulesDefinition.class);
+		context.addExtension(DataWeaveRulesDefinition.class);
 
 		// Added Profile
 		context.addExtension(MuleQualityProfile.class);
@@ -76,6 +79,13 @@ public class MulePlugin implements Plugin {
 		context.addExtension(PropertyDefinition.builder(MuleLanguage.SCAN_FILE_SUFFIXES_KEY)
 				.defaultValue(MuleLanguage.SCAN_FILE_SUFFIXES_DEFAULT_VALUE).name("Scan File Suffixes")
 				.description("List of suffixes to scan for Mule configuration files (independent of language detection).")
+				.subCategory(GENERAL).category(MuleLanguage.LANGUAGE_NAME).multiValues(true)
+				.onQualifiers(Qualifiers.PROJECT).build());
+
+		context.addExtension(PropertyDefinition.builder(DataWeaveSensor.DATAWEAVE_FILE_SUFFIXES_KEY)
+				.defaultValue(DataWeaveSensor.DATAWEAVE_FILE_SUFFIXES_DEFAULT_VALUE).name("DataWeave File Suffixes")
+				.description("List of suffixes to scan for DataWeave source files. These files are analyzed by the "
+						+ "DataWeave sensor (independent of Mule XML scanning).")
 				.subCategory(GENERAL).category(MuleLanguage.LANGUAGE_NAME).multiValues(true)
 				.onQualifiers(Qualifiers.PROJECT).build());
 

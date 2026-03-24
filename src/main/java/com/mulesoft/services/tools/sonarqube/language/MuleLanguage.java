@@ -33,10 +33,13 @@ public class MuleLanguage extends AbstractLanguage {
 	/**
 	 * File suffixes used for SonarQube language detection.
 	 *
-	 * Default is empty to avoid conflicting with SonarQube's XML analyzer on ".xml".
-	 * The Mule plugin itself scans Mule XML files independently of language detection.
+	 * Default is ".dwl" so DataWeave sources are shown under the Mule language in SonarQube,
+	 * while avoiding conflicts with SonarQube's built-in XML analyzer on ".xml".
+	 *
+	 * Mule XML configuration files are still analyzed by this plugin via its own scanning logic
+	 * (see {@link #SCAN_FILE_SUFFIXES_KEY}).
 	 */
-	public static final String FILE_SUFFIXES_DEFAULT_VALUE = "";
+	public static final String FILE_SUFFIXES_DEFAULT_VALUE = ".dwl";
 
 	/**
 	 * File suffixes used by this plugin to scan Mule config XML files.

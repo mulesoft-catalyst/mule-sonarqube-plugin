@@ -46,6 +46,8 @@ import com.mulesoft.services.tools.sonarqube.sensor.MuleSensor;
 public class CoverageSensor implements Sensor {
 
 	private final Logger logger = Loggers.get(CoverageSensor.class);
+	public static final String MUNIT_COVERAGE_JSON_REPORT_PATHS_KEY = "sonar.coverage.mulesoft.jsonReportPaths";
+	public static final String MUNIT_COVERAGE_JSON_REPORT_PATH_KEY = "sonar.coverage.mulesoft.jsonReportPath";
 	private static final String MUNIT_NAME_PROPERTY = "mule.munit.properties.name";
 	private static final String MUNIT_FLOWS_PROPERTY = "mule.munit.properties.flows";
 	private static final String MUNIT_FILES_PROPERTY = "mule.munit.properties.files";
@@ -72,7 +74,9 @@ public class CoverageSensor implements Sensor {
 	@Override
 	public void describe(SensorDescriptor descriptor) {
 		descriptor.name("Compute the coverage of the applications");
-		descriptor.onlyOnLanguage(MuleLanguage.LANGUAGE_KEY);
+		// Do not restrict to Mule "language" detection.
+		// MuleLanguage intentionally defaults to no suffixes for language detection to avoid conflicts with the XML analyzer,
+		// but this sensor can still safely scope itself by scanning Mule XML files via MuleFilePredicate.
 	}
 
 	/**
@@ -82,10 +86,8 @@ public class CoverageSensor implements Sensor {
 	 */
 	@Override
 	public void execute(SensorContext context) {
-		File munitJsonReport = new File(context.fileSystem().baseDir()
-				+ (MuleSensor.getLanguage(context).equals(MuleLanguage.LANGUAGE_MULE4_KEY) ? MUNIT_REPORT_MULE_4
-						: MUNIT_REPORT_MULE_3));
-		if (munitJsonReport.exists()) {
+		File munitJsonReport = resolveCoverageReport(context);
+		if (munitJsonReport != null && munitJsonReport.exists()) {
 			Map<String, FlowCoverageCounter> coverage = loadResults(
 					MuleProperties.getProperties(MuleSensor.getLanguage(context)), munitJsonReport);
 			FileSystem fs = context.fileSystem();
@@ -99,6 +101,11 @@ public class CoverageSensor implements Sensor {
 				saveCoverage(coverage, file.filename(), context, file);
 			}
 		} else {
+			if (context.config().get(MUNIT_COVERAGE_JSON_REPORT_PATH_KEY).isPresent()
+					|| context.config().getStringArray(MUNIT_COVERAGE_JSON_REPORT_PATHS_KEY).length > 0) {
+				logger.warn("No MUnit coverage JSON report found using configured properties '{}'/'{}'. Falling back to 0% coverage.",
+						MUNIT_COVERAGE_JSON_REPORT_PATHS_KEY, MUNIT_COVERAGE_JSON_REPORT_PATH_KEY);
+			}
 			// Treat missing coverage report as 0% coverage so Quality Gates can fail.
 			FileSystem fs = context.fileSystem();
 			String[] scanSuffixes = context.config().getStringArray(MuleLanguage.SCAN_FILE_SUFFIXES_KEY);
@@ -118,6 +125,65 @@ public class CoverageSensor implements Sensor {
 				newCoverage.save();
 			}
 		}
+	}
+
+	private File resolveCoverageReport(SensorContext context) {
+		FileSystem fs = context.fileSystem();
+		String[] configured = context.config().getStringArray(MUNIT_COVERAGE_JSON_REPORT_PATHS_KEY);
+		if (configured.length == 0) {
+			String single = context.config().get(MUNIT_COVERAGE_JSON_REPORT_PATH_KEY).orElse(null);
+			if (single != null && !single.trim().isEmpty()) {
+				configured = new String[] { single };
+			}
+		}
+
+		for (String rawPath : configured) {
+			if (rawPath == null) {
+				continue;
+			}
+			String p = rawPath.trim();
+			if (p.isEmpty()) {
+				continue;
+			}
+			// Some scanners pass multi-values as a single comma-separated string.
+			if (p.contains(",")) {
+				String[] parts = p.split(",");
+				for (String part : parts) {
+					File f = toFile(fs.baseDir(), part);
+					if (f != null && f.exists()) {
+						return f;
+					}
+				}
+				continue;
+			}
+
+			File f = toFile(fs.baseDir(), p);
+			if (f != null && f.exists()) {
+				return f;
+			}
+		}
+
+		String defaultRelative = MuleSensor.getLanguage(context).equals(MuleLanguage.LANGUAGE_MULE4_KEY) ? MUNIT_REPORT_MULE_4
+				: MUNIT_REPORT_MULE_3;
+		return new File(fs.baseDir() + defaultRelative);
+	}
+
+	private static File toFile(File baseDir, String rawPath) {
+		if (rawPath == null) {
+			return null;
+		}
+		String p = rawPath.trim();
+		if (p.isEmpty()) {
+			return null;
+		}
+		if (p.startsWith("file:")) {
+			p = p.substring("file:".length());
+		}
+		File f = new File(p);
+		if (!f.isAbsolute()) {
+			f = new File(baseDir, p);
+		}
+		return f;
 	}
 
 	/**

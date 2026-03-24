@@ -85,6 +85,21 @@ public class MulePlugin implements Plugin {
 						+ "(format: prefix=namespaceURI). Example: file:/path/to/namespaces.properties or classpath:namespace-extra.properties")
 				.subCategory(GENERAL).category(MuleLanguage.LANGUAGE_NAME).onQualifiers(Qualifiers.PROJECT).build());
 
+		context.addExtension(PropertyDefinition.builder(CoverageSensor.MUNIT_COVERAGE_JSON_REPORT_PATHS_KEY)
+				.name("MUnit coverage JSON report paths")
+				.description("Optional list of paths to MUnit coverage JSON report files. "
+						+ "Paths may be absolute or relative to the module base directory. "
+						+ "If unset, defaults are used: Mule 3 -> target/munit-reports/coverage-json/report.json, "
+						+ "Mule 4 -> target/site/munit/coverage/munit-coverage.json.")
+				.subCategory(GENERAL).category(MuleLanguage.LANGUAGE_NAME).multiValues(true)
+				.onQualifiers(Qualifiers.PROJECT).build());
+
+		context.addExtension(PropertyDefinition.builder(CoverageSensor.MUNIT_COVERAGE_JSON_REPORT_PATH_KEY)
+				.name("MUnit coverage JSON report path (deprecated)")
+				.description("Deprecated single-value alternative to '" + CoverageSensor.MUNIT_COVERAGE_JSON_REPORT_PATHS_KEY
+						+ "'. Prefer the multi-value property.")
+				.subCategory(GENERAL).category(MuleLanguage.LANGUAGE_NAME).onQualifiers(Qualifiers.PROJECT).build());
+
 		context.addExtensions(MuleMetrics.class, ConfigurationFilesSensor.class, MuleSizeRating.class,
 				MuleFlowCount.class, MuleSubFlowCount.class, MuleTransformationCount.class, CoverageSensor.class,
 				MUnitSensor.class);

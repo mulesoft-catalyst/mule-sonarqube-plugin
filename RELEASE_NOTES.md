@@ -64,6 +64,13 @@ This release focuses on:
   - Updated `pom.xml` project URL to `https://github.com/mulesoft-catalyst/mule-sonarqube-plugin`.
 - **#23 – Enable better issue location reporting**
   - Added **node-scope** rules for v1.1 that return the exact violating nodes (elements/attributes). SonarQube issues are now anchored directly to those nodes without requiring a separate `locationHint`.
+- **MUnit coverage import no longer depends on Sonar “language detection”**
+  - `CoverageSensor` no longer requires files to be detected as language `mule` (which is commonly disabled to avoid `.xml` conflicts with the XML analyzer).
+  - Coverage is applied by scanning Mule XML files via `sonar.mule.scan.file.suffixes` + Mule namespace detection.
+- **Support custom MUnit coverage JSON report paths**
+  - Added `sonar.coverage.mulesoft.jsonReportPaths` (multi-value) to point at one or more MUnit coverage JSON report files.
+  - Added `sonar.coverage.mulesoft.jsonReportPath` as a deprecated single-value fallback.
+  - If unset, defaults are still used (Mule 3: `target/munit-reports/coverage-json/report.json`; Mule 4: `target/site/munit/coverage/munit-coverage.json`).
 
 ### Security fixes
 

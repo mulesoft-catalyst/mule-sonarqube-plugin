@@ -189,6 +189,21 @@ The plugin handles different types of metrics, such as:
 - Coverage. To be able to see it, you need to configure json format in Munit Report. https://docs.mulesoft.com/munit/2.2/coverage-maven-concept
 - Number of MUnit Tests
 
+#### MUnit coverage JSON report location
+
+By default, the plugin loads the MUnit coverage JSON report from:
+
+- **Mule 3**: `target/munit-reports/coverage-json/report.json`
+- **Mule 4**: `target/site/munit/coverage/munit-coverage.json`
+
+If your CI/test job generates the JSON report in a different location (for example, in a separate test application/module),
+you can provide one or more explicit paths via:
+
+- `-Dsonar.coverage.mulesoft.jsonReportPaths=/abs/path/to/report.json`
+- `-Dsonar.coverage.mulesoft.jsonReportPaths=target/site/munit/coverage/munit-coverage.json,../test-app/target/.../munit-coverage.json`
+
+Paths can be **absolute** or **relative to the module base directory** being analyzed by Sonar.
+
 ## Configuration
 ### Server
 This plugin scans Mule configuration XML files by detecting Mule's core namespace (`http://www.mulesoft.org/schema/mule/core`) and by the configurable suffix list `sonar.mule.scan.file.suffixes` (default: `.xml`).

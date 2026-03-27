@@ -1,6 +1,10 @@
 package com.mulesoft.services.tools.sonarqube.filter;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 import org.jdom2.Document;
 import org.jdom2.JDOMException;
@@ -66,7 +70,8 @@ public class MuleFilePredicate implements FilePredicate {
 	 *   <li>its root element namespace URI equals {@code http://www.mulesoft.org/schema/mule/core}</li>
 	 * </ul>
 	 *
-	 * <p>Parsing errors are logged and treated as a non-match so analysis can continue.
+	 * <p>Non-Mule or unparseable XML files are treated as a non-match so analysis can continue. Parse
+	 * errors are logged at debug level to avoid noisy logs when projects contain unrelated XML files.
 	 *
 	 * @param inputFile the SonarQube file to test
 	 * @return {@code true} when the file is a Mule configuration file; {@code false} otherwise
@@ -80,17 +85,64 @@ public class MuleFilePredicate implements FilePredicate {
 		for (String fileExtension : fileExtensions) {
 			if (inputFile.filename().endsWith(fileExtension)) {
 				try {
-					Document document = saxBuilder.build(inputFile.inputStream());
-	
+					// Fast path: avoid parsing XML that doesn't even reference Mule's core namespace.
+					// This prevents noisy parse errors on unrelated XML files (or non-XML files with .xml extension).
+					if (!containsMuleNamespaceHint(inputFile)) {
+						return false;
+					}
+
+					byte[] bytes;
+					try (InputStream in = inputFile.inputStream()) {
+						bytes = readAllBytes(in);
+					}
+
+					Document document = saxBuilder.build(new ByteArrayInputStream(bytes));
+
 					String namespace = document.getRootElement().getNamespaceURI();
 					if (muleNamespace.equals(namespace))
 						return true;
 				} catch (JDOMException | IOException e) {
-					logger.error("Parsing document:" + inputFile.filename(), e);
+					if (logger.isDebugEnabled()) {
+						logger.debug("Skipping unparseable/non-Mule XML file: {} ({})", inputFile.filename(),
+								e.getMessage());
+					}
 				}
 			}
 		}
 		return false;
+	}
+
+	private boolean containsMuleNamespaceHint(InputFile inputFile) {
+		// The Mule core namespace is ASCII; a UTF-8 decode of the leading bytes is sufficient for the hint check.
+		final int maxBytes = 64 * 1024;
+		try (InputStream in = inputFile.inputStream()) {
+			ByteArrayOutputStream out = new ByteArrayOutputStream(Math.min(8192, maxBytes));
+			byte[] buf = new byte[8192];
+			int total = 0;
+			int r;
+			while (total < maxBytes && (r = in.read(buf, 0, Math.min(buf.length, maxBytes - total))) >= 0) {
+				out.write(buf, 0, r);
+				total += r;
+			}
+			String head = new String(out.toByteArray(), StandardCharsets.UTF_8);
+			return head.contains(muleNamespace);
+		} catch (IOException e) {
+			// If we can't read the file, treat as non-match to keep analysis resilient.
+			if (logger.isDebugEnabled()) {
+				logger.debug("Failed to read XML file header for {} ({})", inputFile.filename(), e.getMessage());
+			}
+			return false;
+		}
+	}
+
+	private static byte[] readAllBytes(InputStream in) throws IOException {
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		byte[] buf = new byte[8192];
+		int r;
+		while ((r = in.read(buf)) >= 0) {
+			out.write(buf, 0, r);
+		}
+		return out.toByteArray();
 	}
 
 }

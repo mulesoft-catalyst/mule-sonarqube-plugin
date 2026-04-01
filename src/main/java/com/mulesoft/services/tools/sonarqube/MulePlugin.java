@@ -31,8 +31,8 @@ public class MulePlugin implements Plugin {
 		if (logger.isDebugEnabled())
 			logger.debug("Configuring Mule Plugin");
 
-		// Added Language
-		context.addExtensions(MuleLanguage.class, MuleSensor.class);
+		// Register Mule sensor without claiming XML files as a separate language.
+		context.addExtension(MuleSensor.class);
 		// context.addExtension(getProperties());
 
 		// Added Rules

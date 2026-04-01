@@ -26,7 +26,7 @@ import com.mulesoft.services.xpath.XPathProcessor;
 
 /**
  * Consumer to validate an InputFile against all the rules
- * 
+ *
  * @author franco.parma
  *
  */
@@ -62,7 +62,7 @@ public class SonarRuleConsumer implements Consumer<InputFile> {
 			logger.debug("Validating mule file:" + t.filename());
 		}
 
-		Collection<ActiveRule> activeRules = this.context.activeRules().findByLanguage(MuleLanguage.LANGUAGE_KEY);
+		Collection<ActiveRule> activeRules = this.context.activeRules().findByLanguage("xml");
 
 		Iterator<ActiveRule> iterator = rulesIterator(activeRules);
 

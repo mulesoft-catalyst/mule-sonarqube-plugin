@@ -22,7 +22,7 @@ import com.mulesoft.services.tools.sonarqube.rule.MuleRulesDefinition;
 
 /**
  * Mule Sensor Iterates over all mule files and applies the corresponding rules
- * 
+ *
  * @author franco.perez
  *
  */
@@ -34,7 +34,7 @@ public class MuleSensor implements Sensor {
 
 	@Override
 	public void describe(SensorDescriptor descriptor) {
-		descriptor.onlyOnLanguage(MuleLanguage.LANGUAGE_KEY);
+		descriptor.onlyOnLanguage("xml");
 		descriptor.createIssuesForRuleRepositories(MuleRulesDefinition.MULE3_REPOSITORY_KEY,
 				MuleRulesDefinition.MULE4_REPOSITORY_KEY);
 	}

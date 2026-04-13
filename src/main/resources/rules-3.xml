@@ -1,0 +1,161 @@
+<rulestore type="mule3">
+	<ruleset category="application">
+		<rule id="1"
+			name="Application should have used APIKit to auto-generate the implementation interface"
+			description="Application should have used APIKit to auto-generate the implementation interface"
+			severity="MAJOR" applies="application" type="code_smell">
+			count(//mule:mule/apikit:config)>0
+		</rule>
+		<rule id="2"
+			name="Application should have an APIKit Global exception strategy"
+			description="Application should have an APIKit Global exception strategy"
+			severity="MAJOR" applies="application" type="code_smell">
+			count(//mule:mule/apikit:mapping-exception-strategy)>0
+		</rule>
+	</ruleset>
+	<ruleset category="flows">
+		<rule id="1"
+			name="Configuration files should not have so many flows"
+			description="Configuration files should not have so many flows"
+			severity="MAJOR" type="code_smell">
+			not(count(//mule:mule/mule:flow)>=10)
+		</rule>
+		<rule id="2"
+			name="Configuration files should not have so many subflows"
+			description="Configuration files should not have so many subflows"
+			severity="MAJOR" type="code_smell">
+			not(count(//mule:mule/mule:sub-flow)>=5)
+		</rule>
+		<rule id="3" name="Flows names should match a naming convention"
+			description="Flows names should match a naming convention"
+			severity="MINOR" type="code_smell">
+			count(//mule:mule/mule:flow)=0 or
+			matches(//mule:mule/mule:flow/@name, '^[a-z:\/{}]+(-[a-z]+)*$')
+		</rule>
+		<rule id="4"
+			name="SubFlows names should match a naming convention"
+			description="SubFlows names should match a naming convention"
+			severity="MINOR" type="code_smell">
+			count(//mule:mule/mule:sub-flow)=0 or
+			matches(//mule:mule/mule:sub-flow/@name, '^[a-z:\/{}]+(-[a-z]+)*$')
+		</rule>
+		<!-- <rule id="5" description="Sessions Variables should be avoided" severity="MAJOR" 
+			type="bug"> (count(//mule:mule/mule:sub-flow)=0 or count(//mule:mule/mule:sub-flow/mule:set-session-variable)=0) 
+			and (count(//mule:mule/mule:flow)=0 or count(//mule:mule/mule:flow/mule:set-session-variable)=0) 
+			</rule> -->
+		<rule id="5" name="Encryption key should not be logged"
+			description="Encryption key should not be logged" severity="MAJOR"
+			type="vulnerability">
+			count(//mule:mule/mule:flow/mule:logger[contains(@message,'${mule.key}')])=0
+			and
+			count(//mule:mule/mule:sub-flow/mule:logger[contains(@message,'${mule.key}')])=0
+		</rule>
+	</ruleset>
+	<ruleset category="configuration">
+		<rule id="1"
+			name="Credentials and resources should be managed with application properties"
+			description="Credentials and resources should be managed with application properties"
+			severity="MAJOR" applies="application" type="bug">
+			count(//mule:mule/secure-property-placeholder:config)=1 or
+			ends-with(//mule:mule/context:property-placeholder/@location,'.properties')
+		</rule>
+		<rule id="2"
+			name="Mule Credentials Vault should not use a hardcoded encryption key"
+			description="Mule Credentials Vault should not use a hardcoded encryption key"
+			severity="MAJOR" applies="application" type="bug">
+			count(//mule:mule/context:property-placeholder)=1 or
+			(ends-with(//mule:mule/secure-property-placeholder:config/@location,'.properties')
+			and matches(//mule:mule/secure-property-placeholder:config/@key,
+			'^\$\{.*\}$'))
+		</rule>
+		<rule id="3"
+			name="AutoDiscovery should be used to register the app in API manager"
+			description="AutoDiscovery should be used to register the app in API manager"
+			severity="MAJOR" applies="application" type="vulnerability">
+			count(//mule:mule/api-platform-gw:api)=1 and
+			//mule:mule/api-platform-gw:api/@create = 'true'
+		</rule>
+		<rule id="4"
+			name="HTTP Status codes should have been properly set inside the exception handler"
+			description="HTTP Status codes should have been properly set inside the exception handler"
+			severity="MAJOR" type="bug">
+			count(//mule:mule/apikit:mapping-exception-strategy/apikit:mapping)=0
+			or
+			(count(//mule:mule/apikit:mapping-exception-strategy/apikit:mapping[@statusCode='404'])=1
+			and
+			count(//mule:mule/apikit:mapping-exception-strategy/apikit:mapping[@statusCode='405'])=1
+			and
+			count(//mule:mule/apikit:mapping-exception-strategy/apikit:mapping[@statusCode='415'])=1
+			and
+			count(//mule:mule/apikit:mapping-exception-strategy/apikit:mapping[@statusCode='406'])=1
+			and
+			count(//mule:mule/apikit:mapping-exception-strategy/apikit:mapping[@statusCode='400'])=1
+			and
+			count(//mule:mule/apikit:mapping-exception-strategy/apikit:mapping[@statusCode='500'])=1
+			)
+		</rule>
+		<rule id="5"
+			name="Data Transformations should be stored in external DWL Files - Payload"
+			description="Data Transformations should be stored in external DWL Files - Payload"
+			severity="MINOR" type="code_smell">
+			count(//mule:mule/mule:flow/dw:transform-message/dw:set-payload)=0 or
+			matches(//mule:mule/mule:flow/dw:transform-message/dw:set-payload/@resource,'^classpath.*dwl$')
+		</rule>
+		<rule id="6"
+			name="Data Transformations should be stored in external DWL Files - Variable"
+			description="Data Transformations should be stored in external DWL Files - Variable"
+			severity="MINOR" type="code_smell">
+			count(//mule:mule/mule:flow/dw:transform-message/dw:set-variable)=0
+			or
+			matches(//mule:mule/mule:flow/dw:transform-message/dw:set-variable/@resource,'^classpath.*dwl$')
+		</rule>
+		<rule id="7"
+			name="Data Transformations should be stored in external DWL Files - Property"
+			description="Data Transformations should be stored in external DWL Files - Property"
+			severity="MINOR" type="code_smell">
+			count(//mule:mule/mule:flow/dw:transform-message/dw:set-property)=0
+			or
+			matches(//mule:mule/mule:flow/dw:transform-message/dw:set-property/@resource,'^classpath.*dwl$')
+		</rule>
+		<rule id="8"
+			name="HTTP Request Configuration should have response timeout setted"
+			description="HTTP Request Configuration should have response timeout setted"
+			severity="MINOR" type="code_smell">
+			count(//mule:mule/http:request-config)=0
+			or
+			(count(//mule:mule/http:request-config)=count(//mule:mule/http:request-config/@responseTimeout)
+			and
+			matches(//mule:mule/http:request-config/@responseTimeout,
+			'^\$\{.*\}$'))
+		</rule>
+		<rule id="9"
+			name="Oracle Configuration should have a connection pool setted"
+			description="Oracle Configuration should have a connection pool setted"
+			severity="MINOR" type="code_smell">
+			count(//mule:mule/db:oracle-config)=0
+			or
+			count(//mule:mule/db:oracle-config/db:pooling-profile)>0
+			or
+			boolean(//mule:mule/db:oracle-config/@dataSource-ref)
+		</rule>
+		<rule id="10" name="HTTP Listener should use HTTPS protocol"
+			description="HTTP Listener should use HTTPS protocol"
+			severity="MAJOR" type="vulnerability"
+			locationHint="//*[local-name()='listener-config']">
+			count(//mule:mule/http:listener-config)=0
+			or
+			//mule:mule/http:listener-config/@protocol='HTTPS'
+		</rule>
+		<rule id="11"
+			name="HTTP Listener should use a specific port property"
+			description="HTTP Listener should use a specific port property"
+			severity="MAJOR" type="code_smell"
+			locationHint="//*[local-name()='listener-config']">
+			count(//mule:mule/http:listener-config)=0
+			or
+			//mule:mule/http:listener-config/@port='${https.port}' or
+			//mule:mule/http:listener-config/@port='${https.private.port}'
+		</rule>
+	</ruleset>
+</rulestore>
+

@@ -8,9 +8,16 @@ import org.sonar.api.utils.log.Loggers;
 import com.mulesoft.services.tools.sonarqube.metrics.MuleMetrics;
 
 /**
- * Computes the complex rating depending on the number of flows
- * @author franco.perez
+ * Computes a configuration complexity rating based on flow/subflow counts.
  *
+ * <p>The plugin uses a simple threshold-based approach: the total number of flows
+ * (flows + subflows) maps to a rating value compatible with SonarQube’s rating metric
+ * representation (A=1, B=2, C=3).
+ *
+ * @author franco.perez
+ * @version 1.1.0
+ * @since 1.1.0
+ * @see MuleMetrics#CONFIGURATION_FILES_COMP_RATING
  */
 public class MuleSizeRating implements MeasureComputer {
 
@@ -21,15 +28,28 @@ public class MuleSizeRating implements MeasureComputer {
 	private static final int RATING_B = 2;
 	private static final int RATING_C = 3;
 
+	/**
+	 * Declares required input metrics and the output rating metric.
+	 *
+	 * @param def definition context
+	 * @return a measure computer definition
+	 */
 	@Override
 	public MeasureComputerDefinition define(MeasureComputerDefinitionContext def) {
 		return def.newDefinitionBuilder().setInputMetrics(MuleMetrics.FLOWS.key(), MuleMetrics.SUBFLOWS.key())
 				.setOutputMetrics(MuleMetrics.CONFIGURATION_FILES_COMP_RATING.key()).build();
 	}
 
+	/**
+	 * Computes the rating based on the summed number of flows and subflows.
+	 *
+	 * @param context compute context providing access to measures
+	 */
 	@Override
 	public void compute(MeasureComputerContext context) {
-		logger.info("Computing MuleSizeRating");
+		if(logger.isDebugEnabled()) {
+			logger.debug("Computing MuleSizeRating");
+		}
 		Measure flows = context.getMeasure(MuleMetrics.FLOWS.key());
 		Measure subflows = context.getMeasure(MuleMetrics.SUBFLOWS.key());
 		int totalNumberOfFlows = 0;

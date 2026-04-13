@@ -17,6 +17,15 @@ import javax.xml.bind.annotation.XmlValue;
 
 
 /**
+ * JAXB model for a single validation rule entry in a Mule rules XML file.
+ *
+ * <p>Instances of this class are produced by JAXB when parsing the rule store XML. The main rule
+ * expression is stored in {@link #value} and is interpreted by the plugin as an XPath expression.
+ * Additional metadata (severity, type, applicability scope, etc.) is used when registering rules
+ * in SonarQube.
+ *
+ * @version 1.1.0
+ * @since 1.1.0
  * <p>Java class for anonymous complex type.
  * 
  * <p>The following schema fragment specifies the expected content contained within this class.
@@ -101,6 +110,8 @@ public class Rule {
     protected String type;
     @XmlAttribute(name = "locationHint")
 	private String locationHint;
+    @XmlAttribute(name = "pluginVersion")
+	private String pluginVersion;
 
     /**
      * Gets the value of the value property.
@@ -272,17 +283,42 @@ public class Rule {
     }
 
 	/**
-	 * 
+	 * Returns the optional XPath expression used to locate the issue location when this rule fails.
+	 *
+	 * @return an XPath expression used as a location hint, or null when not provided
 	 */
 	public String getLocationHint() {
 		return locationHint;
 	}
 
 	/**
-	 * @see #locationHint
+	 * Sets the optional XPath expression used to locate the issue location when this rule fails.
+	 *
+	 * @param aLocationHint XPath expression used as a location hint; may be null
 	 */
 	public void setLocationHint(String aLocationHint) {
 		locationHint = aLocationHint;
+	}
+
+    /**
+	 * Returns the plugin version identifier associated with this rule.
+	 *
+	 * <p>This value influences how some strategies interpret the rule (for example, enabling node
+	 * scope behavior in version {@code 1.1}).
+	 *
+	 * @return plugin version string, or null when not provided
+	 */
+	public String getPluginVersion() {
+		return pluginVersion;
+	}
+
+	/**
+	 * Sets the plugin version identifier associated with this rule.
+	 *
+	 * @param aPluginVersion plugin version string; may be null
+	 */
+	public void setPluginVersion(String aPluginVersion) {
+		pluginVersion = aPluginVersion;
 	}
 
 }

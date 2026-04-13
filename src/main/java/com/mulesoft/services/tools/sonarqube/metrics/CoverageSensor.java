@@ -25,9 +25,29 @@ import com.mulesoft.services.tools.sonarqube.language.MuleLanguage;
 import com.mulesoft.services.tools.sonarqube.properties.MuleProperties;
 import com.mulesoft.services.tools.sonarqube.sensor.MuleSensor;
 
+/**
+ * Imports MUnit coverage results and reports them as SonarQube coverage on Mule configuration files.
+ *
+ * <p>The sensor supports different report locations/formats for Mule 3 and Mule 4:
+ * <ul>
+ *   <li>Mule 3: {@code target/munit-reports/coverage-json/report.json}</li>
+ *   <li>Mule 4: {@code target/site/munit/coverage/munit-coverage.json}</li>
+ * </ul>
+ *
+ * <p>The JSON schema differs between versions; field names are externalized via {@link MuleProperties}
+ * so the same parsing logic can be used for both.
+ *
+ * <p>If the report is missing, the sensor records 0 hits for every line in each Mule config file so
+ * coverage-based quality gates can fail deterministically.
+ *
+ * @version 1.1.0
+ * @since 1.1.0
+ */
 public class CoverageSensor implements Sensor {
 
 	private final Logger logger = Loggers.get(CoverageSensor.class);
+	public static final String MUNIT_COVERAGE_JSON_REPORT_PATHS_KEY = "sonar.coverage.mulesoft.jsonReportPaths";
+	public static final String MUNIT_COVERAGE_JSON_REPORT_PATH_KEY = "sonar.coverage.mulesoft.jsonReportPath";
 	private static final String MUNIT_NAME_PROPERTY = "mule.munit.properties.name";
 	private static final String MUNIT_FLOWS_PROPERTY = "mule.munit.properties.flows";
 	private static final String MUNIT_FILES_PROPERTY = "mule.munit.properties.files";
@@ -46,29 +66,133 @@ public class CoverageSensor implements Sensor {
 			+ "site" + java.io.File.separator + "munit" + java.io.File.separator + "coverage" + java.io.File.separator
 			+ "munit-coverage.json";
 
+	/**
+	 * Describes this sensor for SonarQube and restricts it to Mule language projects.
+	 *
+	 * @param descriptor the sensor descriptor
+	 */
 	@Override
 	public void describe(SensorDescriptor descriptor) {
 		descriptor.name("Compute the coverage of the applications");
-		descriptor.onlyOnLanguage(MuleLanguage.LANGUAGE_KEY);
+		// Do not restrict to Mule "language" detection.
+		// MuleLanguage intentionally defaults to no suffixes for language detection to avoid conflicts with the XML analyzer,
+		// but this sensor can still safely scope itself by scanning Mule XML files via MuleFilePredicate.
 	}
 
+	/**
+	 * Loads the MUnit coverage report (if present) and saves coverage onto each Mule configuration file.
+	 *
+	 * @param context sensor execution context
+	 */
 	@Override
 	public void execute(SensorContext context) {
-		File munitJsonReport = new File(context.fileSystem().baseDir()
-				+ (MuleSensor.getLanguage(context).equals(MuleLanguage.LANGUAGE_MULE4_KEY) ? MUNIT_REPORT_MULE_4
-						: MUNIT_REPORT_MULE_3));
-		if (munitJsonReport.exists()) {
+		File munitJsonReport = resolveCoverageReport(context);
+		if (munitJsonReport != null && munitJsonReport.exists()) {
 			Map<String, FlowCoverageCounter> coverage = loadResults(
 					MuleProperties.getProperties(MuleSensor.getLanguage(context)), munitJsonReport);
 			FileSystem fs = context.fileSystem();
 			// Only ConfigurationFiles
-			Iterable<InputFile> files = fs.inputFiles(new MuleFilePredicate(new MuleLanguage(context.config()).getFileSuffixes()));
+			String[] scanSuffixes = context.config().getStringArray(MuleLanguage.SCAN_FILE_SUFFIXES_KEY);
+			if (scanSuffixes.length == 0) {
+				scanSuffixes = MuleLanguage.SCAN_FILE_SUFFIXES_DEFAULT_VALUE.split(",");
+			}
+			Iterable<InputFile> files = fs.inputFiles(new MuleFilePredicate(scanSuffixes));
 			for (InputFile file : files) {
 				saveCoverage(coverage, file.filename(), context, file);
+			}
+		} else {
+			if (context.config().get(MUNIT_COVERAGE_JSON_REPORT_PATH_KEY).isPresent()
+					|| context.config().getStringArray(MUNIT_COVERAGE_JSON_REPORT_PATHS_KEY).length > 0) {
+				logger.warn("No MUnit coverage JSON report found using configured properties '{}'/'{}'. Falling back to 0% coverage.",
+						MUNIT_COVERAGE_JSON_REPORT_PATHS_KEY, MUNIT_COVERAGE_JSON_REPORT_PATH_KEY);
+			}
+			// Treat missing coverage report as 0% coverage so Quality Gates can fail.
+			FileSystem fs = context.fileSystem();
+			String[] scanSuffixes = context.config().getStringArray(MuleLanguage.SCAN_FILE_SUFFIXES_KEY);
+			if (scanSuffixes.length == 0) {
+				scanSuffixes = MuleLanguage.SCAN_FILE_SUFFIXES_DEFAULT_VALUE.split(",");
+			}
+			Iterable<InputFile> files = fs.inputFiles(new MuleFilePredicate(scanSuffixes));
+			for (InputFile file : files) {
+				int lines = file.lines();
+				if (lines <= 0) {
+					continue;
+				}
+				NewCoverage newCoverage = context.newCoverage().onFile(file);
+				for (int i = 1; i <= lines; i++) {
+					newCoverage.lineHits(i, 0);
+				}
+				newCoverage.save();
 			}
 		}
 	}
 
+	private File resolveCoverageReport(SensorContext context) {
+		FileSystem fs = context.fileSystem();
+		String[] configured = context.config().getStringArray(MUNIT_COVERAGE_JSON_REPORT_PATHS_KEY);
+		if (configured.length == 0) {
+			String single = context.config().get(MUNIT_COVERAGE_JSON_REPORT_PATH_KEY).orElse(null);
+			if (single != null && !single.trim().isEmpty()) {
+				configured = new String[] { single };
+			}
+		}
+
+		for (String rawPath : configured) {
+			if (rawPath == null) {
+				continue;
+			}
+			String p = rawPath.trim();
+			if (p.isEmpty()) {
+				continue;
+			}
+			// Some scanners pass multi-values as a single comma-separated string.
+			if (p.contains(",")) {
+				String[] parts = p.split(",");
+				for (String part : parts) {
+					File f = toFile(fs.baseDir(), part);
+					if (f != null && f.exists()) {
+						return f;
+					}
+				}
+				continue;
+			}
+
+			File f = toFile(fs.baseDir(), p);
+			if (f != null && f.exists()) {
+				return f;
+			}
+		}
+
+		String defaultRelative = MuleSensor.getLanguage(context).equals(MuleLanguage.LANGUAGE_MULE4_KEY) ? MUNIT_REPORT_MULE_4
+				: MUNIT_REPORT_MULE_3;
+		return new File(fs.baseDir() + defaultRelative);
+	}
+
+	private static File toFile(File baseDir, String rawPath) {
+		if (rawPath == null) {
+			return null;
+		}
+		String p = rawPath.trim();
+		if (p.isEmpty()) {
+			return null;
+		}
+		if (p.startsWith("file:")) {
+			p = p.substring("file:".length());
+		}
+		File f = new File(p);
+		if (!f.isAbsolute()) {
+			f = new File(baseDir, p);
+		}
+		return f;
+	}
+
+	/**
+	 * Parses a MUnit JSON report file and aggregates coverage information per configuration file.
+	 *
+	 * @param props language-specific properties mapping JSON field names
+	 * @param munitJsonReport report file to read
+	 * @return a map keyed by file name/path to the aggregated coverage counter (may be null on failure)
+	 */
 	private Map<String, FlowCoverageCounter> loadResults(Properties props, File munitJsonReport) {
 		Map<String, FlowCoverageCounter> coverageMap = null;
 		try (Scanner scanner = new Scanner(munitJsonReport)) {
@@ -108,14 +232,12 @@ public class CoverageSensor implements Sensor {
 						}
 					}
 				}
-				String[] fileParts;
-				if (name.contains(File.separator))
-					fileParts = name.split(File.separator);
-				else if (name.contains("/") && "\\".equals(File.separator))
-					fileParts = name.split("/");
-				else
-					fileParts = new String[] { name };
-				coverageMap.put(fileParts[fileParts.length - 1], counter);
+				String normalizedName = name.replace("\\", "/");
+				String[] fileParts = normalizedName.split("/");
+				String baseName = fileParts[fileParts.length - 1];
+				// Store multiple keys to improve matching across environments and report formats.
+				coverageMap.put(baseName, counter);
+				coverageMap.put(normalizedName, counter);
 				if (logger.isDebugEnabled()) {
 					logger.debug("name :" + node.get("name") + " : coverage:" + node.get("coverage"));
 				}
@@ -127,10 +249,24 @@ public class CoverageSensor implements Sensor {
 
 	}
 
+	/**
+	 * Saves coverage to SonarQube for the given file when a matching coverage entry is available.
+	 *
+	 * <p>When the report contains explicit line numbers, those are used. Otherwise the sensor maps
+	 * covered/uncovered message processor counts onto synthetic line numbers starting at 1.
+	 *
+	 * @param coverageMap parsed coverage data keyed by file name/path
+	 * @param fileName file name used as a lookup key
+	 * @param context sensor context used to create and save coverage
+	 * @param file the SonarQube input file receiving coverage
+	 */
 	private void saveCoverage(Map<String, FlowCoverageCounter> coverageMap, String fileName, SensorContext context,
 			InputFile file) {
 
 		FlowCoverageCounter coverage = coverageMap.get(fileName);
+		if (coverage == null) {
+			coverage = coverageMap.get(file.relativePath().replace("\\", "/"));
+		}
 		if (coverage != null) {
 			NewCoverage newCoverage = context.newCoverage().onFile(file);
 

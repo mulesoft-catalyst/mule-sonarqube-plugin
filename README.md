@@ -28,6 +28,16 @@ For more information, about SonarQube please refer to: https://www.sonarqube.org
 
 This is an [UNLICENSED software, please review the considerations](UNLICENSE.md). If you need assistance for extending this, contact MuleSoft Professional Services
 
+**Minimum SonarQube version**: **9.9 LTS** (this plugin is built against `sonar-plugin-api` 9.9).
+
+**Highlights**:
+- **DataWeave scanning**: `.dwl` files are indexed under the Mule language and scanned with DataWeave-specific rules (currently 2 rules: **Remove commented-out code** and **DataWeave file should not be too large**).
+- **MUnit coverage in SonarQube**: imports MUnit coverage JSON reports so coverage is visible in SonarQube (see [MUnit coverage JSON report location](#munit-coverage-json-report-location)).
+
+**Security**: XML parsing is hardened against XXE (external entities/DTDs are blocked). The optional namespace extension property `sonar.mule.namespace.properties` supports only local specs (`classpath:` / `file:` / filesystem path); `http(s)` is not allowed.
+
+**Note**: SonarQube 9.9 LTS requires Java 17 to run the server.
+
 ## SonarQube Concepts
 ### Issues
 Is the way to identify and classify different aspects or exceptions of the code.
@@ -49,7 +59,7 @@ For more information, please refer to https://docs.sonarqube.org/latest/user-gui
 Quality profiles are collections of rules defined for each language that is going to be executed during the inspection of the code.
 The plugin defines one Language, Mule, and two profiles, one for each version of mule. Each one of these profiles defines a set of rules that can be updated easily.
 
-![qualityprofiles](/img/quality-profiles.png)
+![qualityprofiles](/img/1.1/quality-profiles.png)
 
 ### Measures
 Depending on the language, different metrics are being calculated. Issues are one type of metric, but you will have more information about the project, information such as, for example, Size, Complexity, and Coverage.
@@ -66,25 +76,24 @@ For more information, please refer to https://docs.sonarqube.org/latest/user-gui
 
 ### Rules
 They are created based on a file, named rule store. In this rule store, you could define:
--**rulesets**: A way to group the rules by a category. The category itself could be anything, for example, categories like application, configuration, api, or batch could be used. When inspecting a particular project, you could specify which categories (rules) you want to inspect by running for example, mvn sonar:sonar -Dsonar.mule.ruleset.categories=flows,configuration,api
--**rules**: the rule itself, with these attributes:
-- id: a sequential number inside of the ruleset
-- name: meaningful name of rule
-- description: a more complete identification of the rule. It supports HTML
-- severity: the severity of the rule. Possible values are:
-    - BLOCKER
-    - CRITICAL
-    - MAJOR
-    - MINOR
-    - INFO
-- type: the type of the issue that is going to be raised. Possible values are:
-    - code_smell
-    - bug
-    - vulnerability
-- applies: is the scope of the rule, how is it going to be applied, if the rule is going to be validated against a single file or the entire project. For example, if you want to validate that your application is using APIKIT you need to validate the rule throw all the files of the project. Possible values are:
-    - file
-    - application
-- content: xpath expresion to be evaluated.
+- **rulesets**: a way to group rules by a category. Categories can be anything (e.g., application, configuration, api, batch).
+  - You can filter which categories run during analysis with `-Dsonar.mule.ruleset.categories=flows,configuration,api`.
+- **rules**: the rule itself, with these attributes:
+  - **id**: a sequential number inside of the ruleset
+  - **name**: meaningful name of rule
+  - **description**: a more complete identification of the rule (supports HTML)
+  - **severity**: the severity of the rule. Possible values are: `BLOCKER`, `CRITICAL`, `MAJOR`, `MINOR`, `INFO`
+  - **type**: the type of the issue that is going to be raised. Possible values are: `code_smell`, `bug`, `vulnerability`
+  - **applies**: the scope of the rule. Possible values are:
+    - `file`: evaluated per file
+    - `application`: must evaluate true for at least one file in the project
+    - `project`: validates project metadata (e.g., `sonar.projectName` / `sonar.projectKey`) using a regex
+    - `node` (v1.1 rules only): selects violating nodes; an issue is created per node
+  - **pluginVersion** (optional): rule format version:
+    - `1.0` (default): JDOM2/Jaxen evaluation path
+    - `1.1`: `javax.xml` (JAXP) XPath evaluation path (enables node-scope rules and accurate locations)
+  - **locationHint** (optional): an XPath expression used to locate/anchor the issue when the rule fails (mainly used in file-scope rules)
+  - **content**: XPath expression to be evaluated.
 
 Currently, there are two files (rule stores), one per each mule runtime version (3|4).
 For example, the rule store (rules-4.xml) has three rulesets (categories):
@@ -103,6 +112,8 @@ For example, the rule store (rules-4.xml) has three rulesets (categories):
     - Validate HTTPS is being used. (7)
     - Validate HTTP Configuration has the corresponding port placeholders. (8)
     - Validate autodiscovery configuration is not being hardcoded. (9)
+
+DataWeave rules are defined separately in `rules-dataweave.xml` and are evaluated by the DataWeave sensor on `.dwl` files (independent of Mule XML/XPath rules).
 
 **Rule Store Example**
 ```xml
@@ -143,6 +154,35 @@ For example, the rule store (rules-4.xml) has three rulesets (categories):
     </ruleset>
 </rulestore>
 ```
+
+**Rule Store Example (v1.1 / `javax.xml` XPath with node-scope)**
+```xml
+<rulestore type="mule4">
+  <ruleset category="configuration" pluginVersion="1.1">
+    <!-- Node-scope rule: selects each violating node; SonarQube raises one issue per node -->
+    <rule id="1"
+          name="Hardcoded Salesforce connection values are not allowed"
+          description="Detects hardcoded values in Salesforce connection attributes; values must be configurable placeholders like ${...}."
+          severity="MAJOR"
+          applies="node"
+          type="code_smell"
+          pluginVersion="1.1">
+      //salesforce:cached-basic-connection//@*[f:isNotConfigurable(.)]
+    </rule>
+
+    <!-- File-scope rule: must evaluate true per file (uses JAXP boolean evaluation) -->
+    <rule id="2"
+          name="APIKit must be configured"
+          description="Ensures the application uses APIKit by requiring at least one apikit:config element."
+          severity="MAJOR"
+          applies="file"
+          type="code_smell"
+          pluginVersion="1.1">
+      count(//mule:mule/apikit:config) &gt; 0
+    </rule>
+  </ruleset>
+</rulestore>
+```
 ### Measures
 The plugin handles different types of metrics, such as:
 - Number of Flows 
@@ -155,32 +195,60 @@ The plugin handles different types of metrics, such as:
 - Coverage. To be able to see it, you need to configure json format in Munit Report. https://docs.mulesoft.com/munit/2.2/coverage-maven-concept
 - Number of MUnit Tests
 
+#### MUnit coverage JSON report location
+
+By default, the plugin loads the MUnit coverage JSON report from:
+
+- **Mule 3**: `target/munit-reports/coverage-json/report.json`
+- **Mule 4**: `target/site/munit/coverage/munit-coverage.json`
+
+If your CI/test job generates the JSON report in a different location (for example, in a separate test application/module),
+you can provide one or more explicit paths via:
+
+- `-Dsonar.coverage.mulesoft.jsonReportPaths=/abs/path/to/report.json`
+- `-Dsonar.coverage.mulesoft.jsonReportPaths=target/site/munit/coverage/munit-coverage.json,../test-app/target/.../munit-coverage.json`
+
+Paths can be **absolute** or **relative to the module base directory** being analyzed by Sonar.
+
 ## Configuration
 ### Server
-As the plugin inspects xml files and SonarQube already comes with an XML plugin, you have to modify this behavior so only one plugin inspects xml files. For that reason, you have to remove the xml extension from it.
-To do that you have to, as administrator, go to Administration-> Configuration->General Settings->XML and delete the .xml extension from it.
+This plugin scans Mule configuration XML files by detecting Mule's core namespace (`http://www.mulesoft.org/schema/mule/core`) and by the configurable suffix list `sonar.mule.scan.file.suffixes` (default: `.xml`).
 
-![serverconfig](/img/server-conf-1.png)
+DataWeave source files (`.dwl`) are included in the analysis under the **Mule** language by default. The default language suffix list (`sonar.mule.file.suffixes`) is set to `.dwl` so these files show up in SonarQube and can carry issues.
+
+The DataWeave sensor scans files by the configurable suffix list `sonar.mule.dataweave.file.suffixes` (default: `.dwl`).
+
+![serverconfig](/img/1.1/dataweave.png)
+
+
+You **do not need** to remove `.xml` from the built-in XML language settings. If you want to avoid XML analyzer rules running on Mule configuration files, prefer using exclusions on the XML analyzer or project exclusions instead of removing `.xml` globally.
+
+![serverconfig](/img/1.1/server-conf-1.png)
 #### Plugin
 1. Plugin Generation
     - Download the module source code.
     - Open a terminal window and browse to module root folder.
-    - Build the mule plugin for Mule rules running `mvn clean package sonar-packaging:sonar-plugin -Dlanguage=mule`.
-    - Copy the generated file, mule-validation-sonarqube-plugin-{version}-mule.jar to *sonar-home*/extensions/plugins
+    - Build the plugin running `mvn -DskipTests package`.
+    - Copy the generated file `target/mule-validation-sonarqube-plugin-1.1.0-mule.jar` to `SONARQUBE_HOME/extensions/plugins/`.
 
-2. Copy rules [Mule 3 Rules](https://github.com/mulesoft-consulting/mule-sonarqube-plugin/blob/master/src/test/resources/rules-3.xml) and [Mule 4 Rules](https://github.com/mulesoft-consulting/mule-sonarqube-plugin/blob/master/src/test/resources/rules-4.xml) to *sonar-home*/extensions/plugins
+2. Rules files
+    - Rules are **embedded inside the plugin JAR** by default.
+    - Optional override: to customize rules without rebuilding the plugin, place `rules-3.xml` / `rules-4.xml` (and optionally `rules-4-custom.xml`) in `*sonar-home*/extensions/plugins/` (the plugin will use those if present).
+    - Rules support versioning via `pluginVersion`:
+      - `pluginVersion="1.0"` (default): legacy JDOM2 evaluation
+      - `pluginVersion="1.1"`: `javax.xml` XPath evaluation with **node-scope** rules (multiple issues per file + precise locations)
 The jar file of the plugin has to be placed in the following folder <server-home>/extensions/plugins/
 
 ### Project
 #### Quality Profile
 By default, the mule 4 quality profile is going to be used. In case you are analyzing a mule 3 you need to change it, to do that, as an administrator, go to the project -> Administration -> Quality Profiles and change the profile for the Mule Language.
 
-![quality-profiles-conf](/img/quality-profiles-conf.png)
+![quality-profiles-conf](/img/1.1/quality-profiles-conf.png)
 
 #### Quality Gate
 If you have created a custom Mule Quality Gate, to enforce it on a project, you will have to go to the project -> Administration -> Quality Gates and change the gate previously selected.
 
-![quality-gate](/img/quality-gate.png)
+![quality-gate](/img/1.1/quality-gate.png)
 
 ## Execution
 
@@ -217,24 +285,103 @@ Once you run the command, you will see the project and the information about it 
 
 ***Overview***
 
-![project-overview](/img/project-overview.png)
+![project-overview](/img/1.1/project-overview.png)
 
 ***Issues***
 
-![project-issues](/img/project-issues.png)
+![project-issues](/img/1.1/project-issues.png)
 
 ***Measures***
 
-![project-measures](/img/project-measures.png)
+![project-measures](/img/1.1/project-measures.png)
 
 ### Try it out
 
+The easiest way to run SonarQube locally with this plugin is to use the official SonarQube Docker image
+and mount the plugin JAR into the container.
+
+#### Option A (recommended): Run SonarQube and mount the plugin JAR
+
+1) Build the plugin JAR:
+
 ```cmd
-docker pull fperezpa/mulesonarqube:7.7.3
-docker run -d --name sonarqube -p 9000:9000 -p 9092:9092 fperezpa/mulesonarqube:7.7.3
+mvn -DskipTests package
 ```
+
+This produces:
+
+```cmd
+target/mule-validation-sonarqube-plugin-1.1.0-mule.jar
+```
+
+2) Start SonarQube with the plugin mounted into `extensions/plugins/`:
+
+On **Windows (cmd.exe)**:
+
+```cmd
+docker rm -f sonarqube-mule 2>nul
+
+docker run -d --name sonarqube-mule ^
+  -p 9000:9000 ^
+  -v "%cd%/target/mule-validation-sonarqube-plugin-1.1.0-mule.jar:/opt/sonarqube/extensions/plugins/mule-validation-sonarqube-plugin-1.1.0-mule.jar" ^
+  sonarqube:latest
+```
+
+If you are on macOS/Linux, the same command uses `$(pwd)` instead of `%cd%` and does not need `^`:
+
+```bash
+docker rm -f sonarqube-mule 2>/dev/null || true
+
+docker run -d --name sonarqube-mule \
+  -p 9000:9000 \
+  -v "$(pwd)/target/mule-validation-sonarqube-plugin-1.1.0-mule.jar:/opt/sonarqube/extensions/plugins/mule-validation-sonarqube-plugin-1.1.0-mule.jar" \
+  sonarqube:latest
+```
+
+3) Watch startup logs and confirm the server is healthy:
+
+```cmd
+docker logs -f sonarqube-mule
+```
+
+Then open `http://localhost:9000/`.
+
+#### Option B: Build a local Docker image (without committing a Dockerfile)
+
+If you prefer an image that already contains the plugin, you can create a Dockerfile locally (not committed)
+and build it.
+
+1) Build the plugin JAR:
+
+```cmd
+mvn -DskipTests package
+```
+
+2) Create a temporary Dockerfile and build:
+
+```bash
+cat > Dockerfile.sonarqube-mule <<'EOF'
+FROM sonarqube:latest
+COPY target/mule-validation-sonarqube-plugin-1.1.0-mule.jar /opt/sonarqube/extensions/plugins/
+EOF
+
+docker build -t sonarqube-with-mule-plugin -f Dockerfile.sonarqube-mule .
+```
+
+3) Run the image:
+
+```bash
+docker rm -f sonarqube-mule 2>/dev/null || true
+docker run -d --name sonarqube-mule -p 9000:9000 sonarqube-with-mule-plugin
+```
+
+#### Option C: Prebuilt Docker Image with mule-validation-sonaqube-plugin v1.1.0
+```
+docker run -d --name sonarqube-mule -p 9000:9000 pitaliyapankaj/mule-sonarqube-plugin:latest
+```
+
 *Disclaimer*
-The docker image is based on the official SonarQube Image, *sonarqube:7.7-community*. For more information please visit, https://hub.docker.com/_/sonarqube/
+The docker image is based on the official SonarQube Image. For more information please visit https://hub.docker.com/_/sonarqube/
 
 
 ## Final Notes

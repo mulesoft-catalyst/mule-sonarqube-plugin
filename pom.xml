@@ -20,7 +20,7 @@
 		<sonar.apiVersion>9.9.0.229</sonar.apiVersion>
 		<jaxb.api.version>2.3.3</jaxb.api.version>
 		<jaxb.version>2.3.9</jaxb.version>
-		<jackson.version>2.21.1</jackson.version>
+		<jackson.version>2.21.4</jackson.version>
 		<jackson.annotations.version>2.21</jackson.annotations.version>
 		<xerces.version>2.12.2</xerces.version>
 		<woodstox.version>6.4.0</woodstox.version>

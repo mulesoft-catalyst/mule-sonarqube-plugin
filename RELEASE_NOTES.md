@@ -1,3 +1,29 @@
+## Release 1.2.0
+
+This release focuses on SonarQube 2026 LTA/2026.1 compatibility hardening, Java 17 alignment, and packaging/runtime safety improvements.
+
+### Compatibility
+
+- **SonarQube target**: Upgraded plugin API alignment to **SonarQube 2026 LTA / 2026.1** by targeting `sonar-plugin-api` **13.5.0.4319**.
+- **Java baseline**: Updated build targeting to **Java 17** using `maven.compiler.release=17` for reliable modern runtime compatibility.
+- **API forward-compatibility**: Removed usage of deprecated-for-removal Sonar API property qualifier registration (`Qualifiers` / `onQualifiers(...)`) from plugin extension wiring.
+- **Test compatibility with new API**: Updated the test `InputFile` stub to implement `md5Hash()`, which is required by the newer SonarQube plugin API.
+
+### Build and versioning
+
+- Bumped plugin `project.version` from **1.1.0** to **1.2.0**.
+- Updated compatibility documentation/comments in the build configuration to reflect the 2026 line.
+- Scoped JUnit as **test-only** to avoid bundling test libraries into the runtime plugin artifact.
+
+### Validation
+
+- Executed a full clean verification cycle with `mvn clean test` and `mvn -DskipTests package` successfully.
+- Confirmed plugin artifact manifest contains:
+  - `Java-Version: 17`
+  - `Sonar-Version: 13.5.0.4319`
+  - `Plugin-Version: 1.2.0`
+- Confirmed compiled plugin classes are Java 17 bytecode and test libraries are not packaged into the plugin runtime JAR.
+
 ## Release 1.1.0
 
 This release focuses on:

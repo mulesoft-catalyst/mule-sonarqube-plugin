@@ -5,7 +5,7 @@
 
 	<groupId>com.mulesoft.services</groupId>
 	<artifactId>mule-validation-sonarqube-plugin</artifactId>
-	<version>1.1.0</version>
+	<version>1.2.0</version>
 	<packaging>sonar-plugin</packaging>
 
 	<url>https://github.com/mulesoft-catalyst/mule-sonarqube-plugin</url>
@@ -13,14 +13,13 @@
 
 
 	<properties>
-		<maven.compiler.target>1.8</maven.compiler.target>
-		<maven.compiler.source>1.8</maven.compiler.source>
+		<maven.compiler.release>17</maven.compiler.release>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<!-- Align API level with SonarQube 9.9 LTS -->
-		<sonar.apiVersion>9.9.0.229</sonar.apiVersion>
+		<!-- Align API level with SonarQube 2026.1/LTA-compatible plugin API -->
+		<sonar.apiVersion>13.5.0.4319</sonar.apiVersion>
 		<jaxb.api.version>2.3.3</jaxb.api.version>
 		<jaxb.version>2.3.9</jaxb.version>
-		<jackson.version>2.21.1</jackson.version>
+		<jackson.version>2.21.5</jackson.version>
 		<jackson.annotations.version>2.21</jackson.annotations.version>
 		<xerces.version>2.12.2</xerces.version>
 		<woodstox.version>6.4.0</woodstox.version>
@@ -52,6 +51,7 @@
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>4.13.2</version>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.sonarsource.api.plugin</groupId>
@@ -99,7 +99,7 @@
 			<version>${jackson.annotations.version}</version>
 		</dependency>
 
-		<!-- Compliance JAVA 11 -->
+		<!-- Java 17 compatibility for SonarQube 2026 -->
 		<!-- API -->
 		<dependency>
 			<groupId>jakarta.xml.bind</groupId>

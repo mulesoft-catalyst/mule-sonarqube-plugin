@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.Plugin;
 import org.sonar.api.config.PropertyDefinition;
-import org.sonar.api.resources.Qualifiers;
 
 import com.mulesoft.services.tools.sonarqube.language.MuleLanguage;
 import com.mulesoft.services.tools.sonarqube.measures.MuleFlowCount;
@@ -73,27 +72,25 @@ public class MulePlugin implements Plugin {
 
 		context.addExtension(PropertyDefinition.builder(MuleLanguage.FILE_SUFFIXES_KEY)
 				.defaultValue(MuleLanguage.FILE_SUFFIXES_DEFAULT_VALUE).name("File Suffixes")
-				.description("List of suffixes for files to analyze.").subCategory(GENERAL)
-				.category(MuleLanguage.LANGUAGE_NAME).multiValues(true).onQualifiers(Qualifiers.PROJECT).build());
+				.description("List of suffixes for files to analyze.").subCategory(GENERAL).category(MuleLanguage.LANGUAGE_NAME)
+				.multiValues(true).build());
 
 		context.addExtension(PropertyDefinition.builder(MuleLanguage.SCAN_FILE_SUFFIXES_KEY)
 				.defaultValue(MuleLanguage.SCAN_FILE_SUFFIXES_DEFAULT_VALUE).name("Scan File Suffixes")
 				.description("List of suffixes to scan for Mule configuration files (independent of language detection).")
-				.subCategory(GENERAL).category(MuleLanguage.LANGUAGE_NAME).multiValues(true)
-				.onQualifiers(Qualifiers.PROJECT).build());
+				.subCategory(GENERAL).category(MuleLanguage.LANGUAGE_NAME).multiValues(true).build());
 
 		context.addExtension(PropertyDefinition.builder(DataWeaveSensor.DATAWEAVE_FILE_SUFFIXES_KEY)
 				.defaultValue(DataWeaveSensor.DATAWEAVE_FILE_SUFFIXES_DEFAULT_VALUE).name("DataWeave File Suffixes")
 				.description("List of suffixes to scan for DataWeave source files. These files are analyzed by the "
 						+ "DataWeave sensor (independent of Mule XML scanning).")
-				.subCategory(GENERAL).category(MuleLanguage.LANGUAGE_NAME).multiValues(true)
-				.onQualifiers(Qualifiers.PROJECT).build());
+				.subCategory(GENERAL).category(MuleLanguage.LANGUAGE_NAME).multiValues(true).build());
 
 		context.addExtension(PropertyDefinition.builder("sonar.mule.namespace.properties")
 				.name("Extra namespace properties")
 				.description("Optional URL/file/classpath spec to a .properties file containing additional XML namespaces "
 						+ "(format: prefix=namespaceURI). Example: file:/path/to/namespaces.properties or classpath:namespace-extra.properties")
-				.subCategory(GENERAL).category(MuleLanguage.LANGUAGE_NAME).onQualifiers(Qualifiers.PROJECT).build());
+				.subCategory(GENERAL).category(MuleLanguage.LANGUAGE_NAME).build());
 
 		context.addExtension(PropertyDefinition.builder(CoverageSensor.MUNIT_COVERAGE_JSON_REPORT_PATHS_KEY)
 				.name("MUnit coverage JSON report paths")
@@ -101,14 +98,13 @@ public class MulePlugin implements Plugin {
 						+ "Paths may be absolute or relative to the module base directory. "
 						+ "If unset, defaults are used: Mule 3 -> target/munit-reports/coverage-json/report.json, "
 						+ "Mule 4 -> target/site/munit/coverage/munit-coverage.json.")
-				.subCategory(GENERAL).category(MuleLanguage.LANGUAGE_NAME).multiValues(true)
-				.onQualifiers(Qualifiers.PROJECT).build());
+				.subCategory(GENERAL).category(MuleLanguage.LANGUAGE_NAME).multiValues(true).build());
 
 		context.addExtension(PropertyDefinition.builder(CoverageSensor.MUNIT_COVERAGE_JSON_REPORT_PATH_KEY)
 				.name("MUnit coverage JSON report path (deprecated)")
 				.description("Deprecated single-value alternative to '" + CoverageSensor.MUNIT_COVERAGE_JSON_REPORT_PATHS_KEY
 						+ "'. Prefer the multi-value property.")
-				.subCategory(GENERAL).category(MuleLanguage.LANGUAGE_NAME).onQualifiers(Qualifiers.PROJECT).build());
+				.subCategory(GENERAL).category(MuleLanguage.LANGUAGE_NAME).build());
 
 		context.addExtensions(MuleMetrics.class, ConfigurationFilesSensor.class, MuleSizeRating.class,
 				MuleFlowCount.class, MuleSubFlowCount.class, MuleTransformationCount.class, CoverageSensor.class,

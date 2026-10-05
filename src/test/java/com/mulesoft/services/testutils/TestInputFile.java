@@ -7,6 +7,8 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.TextPointer;
@@ -265,6 +267,27 @@ public final class TestInputFile implements InputFile {
 	@Override
 	public Charset charset() {
 		return charset;
+	}
+
+	/**
+	 * Returns the MD5 hash of the underlying file content.
+	 *
+	 * @return lowercase hex MD5 digest, or empty string when content cannot be read
+	 */
+	@Override
+	public String md5Hash() {
+		try {
+			byte[] bytes = Files.readAllBytes(path);
+			MessageDigest md = MessageDigest.getInstance("MD5");
+			byte[] digest = md.digest(bytes);
+			StringBuilder sb = new StringBuilder(digest.length * 2);
+			for (byte b : digest) {
+				sb.append(String.format("%02x", b));
+			}
+			return sb.toString();
+		} catch (IOException | NoSuchAlgorithmException e) {
+			return "";
+		}
 	}
 
 	/**

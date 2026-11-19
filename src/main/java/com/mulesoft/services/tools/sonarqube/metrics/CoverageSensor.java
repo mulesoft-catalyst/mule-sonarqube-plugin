@@ -2,9 +2,7 @@ package com.mulesoft.services.tools.sonarqube.metrics;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
 
@@ -88,7 +86,7 @@ public class CoverageSensor implements Sensor {
 	public void execute(SensorContext context) {
 		File munitJsonReport = resolveCoverageReport(context);
 		if (munitJsonReport != null && munitJsonReport.exists()) {
-			Map<String, FlowCoverageCounter> coverage = loadResults(
+			CoverageIndex coverage = loadResults(
 					MuleProperties.getProperties(MuleSensor.getLanguage(context)), munitJsonReport);
 			FileSystem fs = context.fileSystem();
 			// Only ConfigurationFiles
@@ -98,7 +96,7 @@ public class CoverageSensor implements Sensor {
 			}
 			Iterable<InputFile> files = fs.inputFiles(new MuleFilePredicate(scanSuffixes));
 			for (InputFile file : files) {
-				saveCoverage(coverage, file.filename(), context, file);
+				saveCoverage(coverage, context, file);
 			}
 		} else {
 			if (context.config().get(MUNIT_COVERAGE_JSON_REPORT_PATH_KEY).isPresent()
@@ -193,8 +191,8 @@ public class CoverageSensor implements Sensor {
 	 * @param munitJsonReport report file to read
 	 * @return a map keyed by file name/path to the aggregated coverage counter (may be null on failure)
 	 */
-	private Map<String, FlowCoverageCounter> loadResults(Properties props, File munitJsonReport) {
-		Map<String, FlowCoverageCounter> coverageMap = null;
+	private CoverageIndex loadResults(Properties props, File munitJsonReport) {
+		CoverageIndex coverageMap = null;
 		try (Scanner scanner = new Scanner(munitJsonReport)) {
 
 			String jsonInput = scanner.useDelimiter("\\Z").next();
@@ -204,7 +202,7 @@ public class CoverageSensor implements Sensor {
 				logger.debug("Total Coverage :" + coverage);
 			}
 			ArrayNode files = (ArrayNode) root.get(props.getProperty(MUNIT_FILES_PROPERTY));
-			coverageMap = new HashMap<String, FlowCoverageCounter>();
+			coverageMap = new CoverageIndex();
 			for (Iterator<JsonNode> iterator = files.iterator(); iterator.hasNext();) {
 				JsonNode node = iterator.next();
 				String name = node.get(props.getProperty(MUNIT_NAME_PROPERTY)).asText();
@@ -232,12 +230,8 @@ public class CoverageSensor implements Sensor {
 						}
 					}
 				}
-				String normalizedName = name.replace("\\", "/");
-				String[] fileParts = normalizedName.split("/");
-				String baseName = fileParts[fileParts.length - 1];
-				// Store multiple keys to improve matching across environments and report formats.
-				coverageMap.put(baseName, counter);
-				coverageMap.put(normalizedName, counter);
+				// Keyed by path: files with the same name in different folders must not overwrite each other.
+				coverageMap.put(name, counter);
 				if (logger.isDebugEnabled()) {
 					logger.debug("name :" + node.get("name") + " : coverage:" + node.get("coverage"));
 				}
@@ -255,28 +249,37 @@ public class CoverageSensor implements Sensor {
 	 * <p>When the report contains explicit line numbers, those are used. Otherwise the sensor maps
 	 * covered/uncovered message processor counts onto synthetic line numbers starting at 1.
 	 *
-	 * @param coverageMap parsed coverage data keyed by file name/path
-	 * @param fileName file name used as a lookup key
+	 * @param coverageMap parsed coverage data, looked up by file path (see {@link CoverageIndex})
 	 * @param context sensor context used to create and save coverage
 	 * @param file the SonarQube input file receiving coverage
 	 */
-	private void saveCoverage(Map<String, FlowCoverageCounter> coverageMap, String fileName, SensorContext context,
-			InputFile file) {
+	private void saveCoverage(CoverageIndex coverageMap, SensorContext context, InputFile file) {
 
-		FlowCoverageCounter coverage = coverageMap.get(fileName);
-		if (coverage == null) {
-			coverage = coverageMap.get(file.relativePath().replace("\\", "/"));
+		if (coverageMap == null) {
+			return;
+		}
+		FlowCoverageCounter coverage = coverageMap.find(file.relativePath());
+		if (coverage == null && coverageMap.isBaseNameAmbiguous(file.relativePath())) {
+			logger.warn("Coverage not attached to '{}': several MUnit report entries share its file name and none matches its path.",
+					file.relativePath());
 		}
 		if (coverage != null) {
 			NewCoverage newCoverage = context.newCoverage().onFile(file);
 
 			if (coverage.hasLineNumbers()) {
+				int fileLines = file.lines();
 				for (Iterator<Integer> iterator = coverage.getCoveredLines().iterator(); iterator.hasNext();) {
 					Integer lineNumber = iterator.next();
+					if (isOutOfRange(lineNumber, fileLines, file)) {
+						continue;
+					}
 					newCoverage.lineHits(lineNumber, 1);
 				}
 				for (Iterator<Integer> iterator = coverage.getNotcoveredLines().iterator(); iterator.hasNext();) {
 					Integer lineNumber = iterator.next();
+					if (isOutOfRange(lineNumber, fileLines, file)) {
+						continue;
+					}
 					newCoverage.lineHits(lineNumber, 0);
 				}
 				newCoverage.save();
@@ -292,6 +295,19 @@ public class CoverageSensor implements Sensor {
 				newCoverage.save();
 			}
 		}
+	}
+
+	/**
+	 * Tells whether a line number of the report is outside the file. Such lines are skipped with a warning
+	 * instead of aborting the whole analysis.
+	 */
+	private boolean isOutOfRange(int lineNumber, int fileLines, InputFile file) {
+		if (lineNumber < 1 || lineNumber > fileLines) {
+			logger.warn("Ignoring coverage for line {} of '{}': the file has {} lines.", lineNumber, file.relativePath(),
+					fileLines);
+			return true;
+		}
+		return false;
 	}
 
 }
